@@ -205,3 +205,19 @@ pub fn new_framebuffer(
   node
 }
 
+
+///|
+/// 调整离屏缓冲尺寸（split footer 高度变化等场景）。
+/// 返回新的 FrameBuffer 视图（原记录尺寸字段不可变）。
+pub fn FrameBuffer::resize(
+  self : FrameBuffer,
+  renderer : Renderer,
+  width~ : UInt32,
+  height~ : UInt32,
+) -> FrameBuffer raise {
+  let _ = renderer
+  rethrow_result(
+    buffer_resize(self.context, self.handle, width~, height~),
+  )
+  { context: self.context, handle: self.handle, width, height }
+}

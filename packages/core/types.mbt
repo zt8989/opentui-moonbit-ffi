@@ -584,3 +584,49 @@ priv struct KittyTransportStatus {
   mut pending_files : UInt32
   mut pending_bytes : UInt32
 }
+
+///|
+/// C: ot_split_control，sizeof == 36（9×u32）。
+priv struct SplitControl {
+  struct_size : UInt32
+  abi_version : UInt32
+  command : UInt32
+  arg0 : UInt32
+  arg1 : UInt32
+  arg2 : UInt32
+  arg3 : UInt32
+  arg4 : UInt32
+  arg5 : UInt32
+}
+
+///|
+/// C: ot_session_renderer_state，sizeof == 32（头8 + u64 + 2×u32）。out 记录。
+priv struct RendererState {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut width : UInt32
+  mut height : UInt32
+  mut frame_count : UInt64
+  mut frame_pending : UInt32
+  mut reserved : UInt32
+}
+
+///|
+/// C: ot_session_capabilities，sizeof == 144（12×u32 + term_name 64B + term_version 32B）。
+/// 名字/版本按小端 u32 组返回，读取时解包。
+priv struct SessionCaps {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut flags : UInt32
+  mut width_method : UInt32
+  mut multiplexer : UInt32
+  mut image_protocol : UInt32
+  mut osc52_support : UInt32
+  mut kitty_keyboard_flags : UInt32
+  mut term_name_len : UInt32
+  mut term_version_len : UInt32
+  mut term_from_xtversion : UInt32
+  mut reserved : UInt32
+  mut name_words : (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
+  mut version_words : (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
+}

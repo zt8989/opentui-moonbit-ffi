@@ -873,3 +873,36 @@ fn Renderer::apply_selection(self : Renderer, focus_x : Int, focus_y : Int, is_s
 pub fn Renderer::copy_to_clipboard(self : Renderer, text~ : String) -> Bool raise {
   unwrap(session_copy_to_clipboard(self.context, self.session, text~)) > 0
 }
+
+///|
+/// 只绘制不提交：返回帧请求供 render_split 等高级提交路径使用。
+/// 场景含 FrameBuffer（RENDER_SELF 钩子）节点时不可用，改走 render()。
+pub fn Renderer::paint_frame(self : Renderer) -> SceneFrameRequest raise {
+  unwrap(
+    paint_with_mouse(
+      self.context,
+      self.session,
+      self.background,
+      self.use_mouse,
+    ),
+  )
+}
+
+///|
+/// 泵送会话并反复排空输出直到无字节可交（PENDING 分帧编码的完整交付）。
+pub fn Renderer::flush_output(self : Renderer) -> Unit raise {
+  let mut idle = 0
+  while idle < 16 {
+    let clock : Clock = { id: self.clock_id }
+    let p = unwrap(pump(self.context, self.session, clock_now(clock)))
+    let written = unwrap(drain_stdout(self.context, self.session))
+    if written == 0 {
+      idle += 1
+    } else {
+      idle = 0
+    }
+    if p.status() == OT_PUMP_CLOSED {
+      break
+    }
+  }
+}

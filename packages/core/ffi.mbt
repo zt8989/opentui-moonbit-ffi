@@ -1236,3 +1236,105 @@ extern "C" fn ot_session_start_kitty_file_probe(
   context : Context,
   session : OtHandle,
 ) -> Int32 = "ot_session_start_kitty_file_probe"
+
+///|
+// 分屏：frame 可空（纯 snapshot 提交），snapshots 是 24 字节/条的连续缓冲。
+#borrow(context, session, snapshots, out_status)
+extern "C" fn ot_session_render_split_no_frame_shim(
+  context : Context,
+  session : OtHandle,
+  snapshots : FixedArray[Byte],
+  count : UInt32,
+  pinned_render_offset : UInt32,
+  force : UInt32,
+  out_status : FixedArray[UInt32],
+) -> Int32 = "ot_session_render_split_no_frame"
+
+///|
+#borrow(context, session, frame, snapshots, out_status)
+extern "C" fn ot_session_render_split_with_frame_shim(
+  context : Context,
+  session : OtHandle,
+  frame : SceneFrameRequest,
+  snapshots : FixedArray[Byte],
+  count : UInt32,
+  pinned_render_offset : UInt32,
+  force : UInt32,
+  out_status : FixedArray[UInt32],
+) -> Int32 = "ot_session_render_split_with_frame"
+
+///|
+#borrow(context, session, control, out_offset)
+extern "C" fn ot_session_split_control(
+  context : Context,
+  session : OtHandle,
+  control : SplitControl,
+  out_offset : FixedArray[UInt32],
+) -> Int32 = "ot_session_split_control"
+
+///|
+#borrow(context, session, trailing)
+extern "C" fn ot_session_set_screen(
+  context : Context,
+  session : OtHandle,
+  alternate : UInt32,
+  width : UInt32,
+  height : UInt32,
+  trailing : FixedArray[Byte],
+  byte_count : UInt32,
+) -> Int32 = "ot_session_set_screen"
+
+///|
+#borrow(context, session)
+extern "C" fn ot_session_suspend(context : Context, session : OtHandle) -> Int32 = "ot_session_suspend"
+
+///|
+#borrow(context, session)
+extern "C" fn ot_session_resume(context : Context, session : OtHandle) -> Int32 = "ot_session_resume"
+
+///|
+#borrow(context, session, out_state)
+extern "C" fn ot_session_get_renderer_state(
+  context : Context,
+  session : OtHandle,
+  out_state : RendererState,
+) -> Int32 = "ot_session_get_renderer_state"
+
+///|
+#borrow(context, session, enabled, corner)
+extern "C" fn ot_session_set_debug_overlay(
+  context : Context,
+  session : OtHandle,
+  enabled : UInt32,
+  corner : UInt32,
+) -> Int32 = "ot_session_set_debug_overlay"
+
+///|
+#borrow(context, session, out_state)
+extern "C" fn ot_session_get_state(
+  context : Context,
+  session : OtHandle,
+  out_state : FixedArray[UInt32],
+) -> Int32 = "ot_session_get_state"
+
+///|
+#borrow(context, session, overall_ms, fps, callback_ms)
+extern "C" fn ot_session_update_stats(
+  context : Context,
+  session : OtHandle,
+  overall_ms : Double,
+  fps : UInt32,
+  callback_ms : Double,
+) -> Int32 = "ot_session_update_stats"
+
+///|
+#borrow(context, session, palette, foreground, background)
+extern "C" fn ot_session_set_palette_state(
+  context : Context,
+  session : OtHandle,
+  palette : FixedArray[Byte],
+  color_count : UInt32,
+  foreground : FixedArray[Byte],
+  background : FixedArray[Byte],
+  epoch : UInt32,
+) -> Int32 = "ot_session_set_palette_state"

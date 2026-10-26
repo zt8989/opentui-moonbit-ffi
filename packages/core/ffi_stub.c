@@ -437,3 +437,39 @@ int32_t ot_scene_set_image_null_buffer(ot_context *context,
                                        uint32_t protocol) {
   return ot_scene_set_image(context, node, image, fit, protocol, 0);
 }
+
+// ot_session_render_split 的 frame 双形态：NULL（纯 snapshot 提交）与
+// 非 NULL（带主帧）。snapshots 缓冲是 24 字节/条的连续 ot_split_snapshot。
+typedef struct ot_split_snapshot {
+  ot_handle buffer;
+  uint32_t row_columns;
+  uint32_t flags;
+} ot_split_snapshot;
+
+extern int32_t ot_session_render_split(ot_context *context,
+                                       const ot_handle *session,
+                                       const ot_scene_frame_request *frame,
+                                       const ot_split_snapshot *snapshots,
+                                       uint32_t count,
+                                       uint32_t pinned_render_offset,
+                                       uint32_t force, uint32_t *out_status);
+
+int32_t ot_session_render_split_no_frame(ot_context *context,
+                                         const ot_handle *session,
+                                         const ot_split_snapshot *snapshots,
+                                         uint32_t count,
+                                         uint32_t pinned_render_offset,
+                                         uint32_t force,
+                                         uint32_t *out_status) {
+  return ot_session_render_split(context, session, 0, snapshots, count,
+                                 pinned_render_offset, force, out_status);
+}
+
+int32_t ot_session_render_split_with_frame(
+    ot_context *context, const ot_handle *session,
+    const ot_scene_frame_request *frame, const ot_split_snapshot *snapshots,
+    uint32_t count, uint32_t pinned_render_offset, uint32_t force,
+    uint32_t *out_status) {
+  return ot_session_render_split(context, session, frame, snapshots, count,
+                                 pinned_render_offset, force, out_status);
+}

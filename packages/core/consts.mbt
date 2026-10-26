@@ -828,3 +828,29 @@ pub const OT_KITTY_TRANSPORT_ZLIB : UInt32 = 1
 
 ///|
 pub const OT_KITTY_TRANSPORT_FILE : UInt32 = 2
+
+///|
+/// 分屏控制命令（ot_session_split_control）
+pub const OT_SPLIT_COMMAND_RESET : UInt32 = 0
+
+///|
+pub const OT_SPLIT_COMMAND_SYNC : UInt32 = 1
+
+///|
+pub const OT_SPLIT_COMMAND_OUTPUT_OFFSET : UInt32 = 2
+
+///|
+pub const OT_SPLIT_COMMAND_RENDER_OFFSET : UInt32 = 3
+
+///|
+pub const OT_SPLIT_COMMAND_TRANSITION : UInt32 = 4
+
+///|
+pub const OT_SPLIT_COMMAND_CLEAR_TRANSITION : UInt32 = 5
+
+///|
+/// split snapshot flags：1 = 起新行，2 = 尾随换行
+pub const OT_SPLIT_FLAG_NEW_LINE : UInt32 = 1
+
+///|
+pub const OT_SPLIT_FLAG_TRAILING_NEWLINE : UInt32 = 2
