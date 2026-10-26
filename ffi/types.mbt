@@ -175,3 +175,69 @@ pub struct TicketOut {
   mut byte_count : UInt32
   mut reserved : UInt32
 }
+
+///|
+/// C: ot_session_terminal_options，sizeof == 16。
+priv struct TerminalOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  flags : UInt32
+  kitty_keyboard_flags : UInt32
+}
+
+///|
+/// C: ot_scene_text_options，sizeof == 76。文本前景/背景/属性/对齐。
+struct TextOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  foreground01 : UInt32
+  foreground23 : UInt32
+  background01 : UInt32
+  background23 : UInt32
+  attributes : UInt32
+  wrap_mode : UInt32
+  truncate : UInt32
+  first_line_offset : UInt32
+  scroll_x : Double
+  scroll_y : Double
+  tab_indicator : UInt32
+  tab_color_set : UInt32
+  tab_color01 : UInt32
+  tab_color23 : UInt32
+  text_align : UInt32
+}
+
+///|
+/// 解析后的输入事件（字段已从 ot_input_event 的小端字节展开；
+/// u8/u16 字段零扩展为 UInt32）。公开给应用层使用。
+pub struct InputEvent {
+  kind : UInt32
+  action : UInt32
+  modifiers : UInt32
+  flags : UInt32
+  code : UInt32
+  base_code : UInt32
+  x : UInt32
+  y : UInt32
+  text : String
+}
+
+///|
+priv struct InputDrainOut {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut consumed : UInt32
+  mut count : UInt32
+  mut payload_len : UInt32
+  mut discarded : UInt32
+  mut deadline_ns : UInt64
+}
+
+///|
+priv struct PumpResultOut {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut status : UInt32
+  mut reserved : UInt32
+  mut deadline_ns : UInt64
+}

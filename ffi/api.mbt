@@ -212,9 +212,10 @@ pub fn make_context_options(
 ///|
 /// ot_session_options，struct_size/abi_version 已按 C ABI 填好。
 pub fn make_session_options(
-  chunk_size : UInt32,
-  span_capacity : UInt32,
-  max_bytes : UInt64,
+  chunk_size~ : UInt32 = 4096,
+  span_capacity~ : UInt32 = 2,
+  max_bytes~ : UInt64 = 8192UL,
+  control_capacity~ : UInt32 = 0,
 ) -> SessionOptions {
   {
     struct_size: 32,
@@ -222,7 +223,7 @@ pub fn make_session_options(
     chunk_size,
     span_capacity,
     max_bytes,
-    control_capacity: 0,
+    control_capacity,
     reserved: 0,
   }
 }
@@ -311,11 +312,17 @@ pub fn create_session(
   chunk_size~ : UInt32 = 4096,
   span_capacity~ : UInt32 = 2,
   max_bytes~ : UInt64 = 8192UL,
+  control_capacity~ : UInt32 = 0,
 ) -> Result[OtHandle, NativeError] {
   let out : HandleOut = { context_id: 0, slot: 0, generation: 0, }
   let status = ot_session_create(
     context,
-    make_session_options(chunk_size, span_capacity, max_bytes),
+    make_session_options(
+      chunk_size~,
+      span_capacity~,
+      max_bytes~,
+      control_capacity~,
+    ),
     out,
   )
   match check("ot_session_create", status) {
@@ -487,4 +494,281 @@ pub fn cancel_session(
   session : OtHandle,
 ) -> Result[Unit, NativeError] {
   check("ot_session_cancel", ot_session_cancel(context, session))
+}
+
+///|
+/// 终端 setup 请求：进入备用屏（可选清除）。产生的控制输出由 pump/drain 交付。
+pub fn setup_terminal(
+  context : Context,
+  session : OtHandle,
+  alternate_screen~ : Bool = true,
+  clear_on_close~ : Bool = false,
+) -> Result[Unit, NativeError] {
+  let mut flags : UInt32 = 0
+  if alternate_screen {
+    flags = flags.lor(OT_TERMINAL_ALTERNATE_SCREEN)
+  }
+  if clear_on_close {
+    flags = flags.lor(OT_TERMINAL_CLEAR_ON_CLOSE)
+  }
+  let options : TerminalOptions = {
+    struct_size: 16,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    flags,
+    kitty_keyboard_flags: 0,
+  }
+  check(
+    "ot_session_setup_terminal",
+    ot_session_setup_terminal(context, session, options),
+  )
+}
+
+///|
+/// 终端 phase：UNINITIALIZED / SETTING_UP / ACTIVE。
+pub fn terminal_state(
+  context : Context,
+  session : OtHandle,
+) -> Result[UInt32, NativeError] {
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_session_get_terminal_state(context, session, out)
+  match check("ot_session_get_terminal_state", status) {
+    Ok(_) => Ok(out[0])
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// pump 结果：status（OT_PUMP_*）与可选的 deadline。
+pub struct Pump {
+  status : UInt32
+  deadline_ns : UInt64
+}
+
+///|
+pub fn Pump::status(self : Pump) -> UInt32 {
+  self.status
+}
+
+///|
+pub fn Pump::deadline_ns(self : Pump) -> UInt64 {
+  self.deadline_ns
+}
+
+///|
+/// 推进会话工作（终端 setup/恢复、光标等待等）。
+/// now_ns 是单调时钟样本；work_budget 是本次处理的工作项数。
+pub fn pump(
+  context : Context,
+  session : OtHandle,
+  now_ns : UInt64,
+  work_budget~ : UInt32 = 8,
+) -> Result[Pump, NativeError] {
+  // 版本化记录：out 自身也要填记录头
+  let out : PumpResultOut = {
+    struct_size: 24,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    status: 0,
+    reserved: 0,
+    deadline_ns: 0,
+  }
+  let status = ot_session_pump(context, session, now_ns, work_budget, out)
+  match check("ot_session_pump", status) {
+    Ok(_) => Ok({ status: out.status, deadline_ns: out.deadline_ns, })
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 把队列输出直接写进程 stdout（max_bytes 至少 4），返回写入字节数。
+pub fn drain_stdout(
+  context : Context,
+  session : OtHandle,
+  max_bytes~ : UInt32 = 4096,
+) -> Result[UInt32, NativeError] {
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_session_drain_stdout(context, session, max_bytes, out)
+  match check("ot_session_drain_stdout", status) {
+    Ok(_) => Ok(out[0])
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 一次 input_feed 的产出：解析出的事件与 payload（raw/text 字节区间指向它）。
+pub struct InputEvents {
+  events : Array[InputEvent]
+  consumed : UInt32
+  count : UInt32
+  deadline_ns : UInt64
+}
+
+///|
+pub fn InputEvents::events(self : InputEvents) -> Array[InputEvent] {
+  self.events
+}
+
+///|
+pub fn InputEvents::consumed(self : InputEvents) -> UInt32 {
+  self.consumed
+}
+
+///|
+pub fn InputEvents::count(self : InputEvents) -> UInt32 {
+  self.count
+}
+
+///|
+pub fn InputEvents::deadline_ns(self : InputEvents) -> UInt64 {
+  self.deadline_ns
+}
+
+///|
+pub fn InputEvent::kind(self : InputEvent) -> UInt32 {
+  self.kind
+}
+
+///|
+pub fn InputEvent::action(self : InputEvent) -> UInt32 {
+  self.action
+}
+
+///|
+pub fn InputEvent::modifiers(self : InputEvent) -> UInt32 {
+  self.modifiers
+}
+
+///|
+pub fn InputEvent::code(self : InputEvent) -> UInt32 {
+  self.code
+}
+
+///|
+pub fn InputEvent::text(self : InputEvent) -> String {
+  self.text
+}
+
+///|
+/// 喂入终端输入字节，取回解析好的事件。
+/// records_capacity 按需给（每次调用最多解析这么多事件）。
+pub fn input_feed(
+  context : Context,
+  session : OtHandle,
+  bytes : FixedArray[Byte],
+  byte_count : UInt32,
+  now_ns : UInt64,
+  records_capacity~ : UInt32 = 16,
+  // 库要求 payload_capacity >= OT_INPUT_PAYLOAD_BYTES_MIN (4384)
+  payload_capacity~ : UInt32 = 8192,
+) -> Result[InputEvents, NativeError] {
+  // 每条 ot_input_event 32 字节；缓冲 = capacity * 32
+  let records : FixedArray[Byte] = FixedArray::make(
+    records_capacity.reinterpret_as_int() * 32,
+    0,
+  )
+  let payload : FixedArray[Byte] = FixedArray::make(
+    payload_capacity.reinterpret_as_int(),
+    0,
+  )
+  let drain : InputDrainOut = {
+    struct_size: 32,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    consumed: 0,
+    count: 0,
+    payload_len: 0,
+    discarded: 0,
+    deadline_ns: 0,
+  }
+  let status = ot_session_input_feed(
+    context, session, bytes, byte_count, now_ns, records, records_capacity, payload,
+    payload_capacity, drain,
+  )
+  match check("ot_session_input_feed", status) {
+    Ok(_) => {
+      let events : Array[InputEvent] = []
+      for i in 0..<drain.count.reinterpret_as_int() {
+        let base = i * 32
+        // 小端展开 ot_input_event（布局见 opentui.h）
+        let u8_at = fn(off : Int32) -> UInt32 { records[base + off].to_uint() }
+        let u32_at = fn(off : Int32) -> UInt32 {
+          u8_at(off) |
+          (u8_at(off + 1) << 8) |
+          (u8_at(off + 2) << 16) |
+          (u8_at(off + 3) << 24)
+        }
+        let text_len = u32_at(28).reinterpret_as_int()
+        let text = if text_len > 0 {
+          let text_off = u32_at(24).reinterpret_as_int()
+          let buf : FixedArray[Byte] = FixedArray::make(text_len, 0)
+          for j in 0..<text_len {
+            buf[j] = payload[text_off + j]
+          }
+          @utf8.decode_lossy(Bytes::from_array(buf[:text_len]).exact_view())
+        } else {
+          ""
+        }
+        events.push({
+          kind: u8_at(0),
+          action: u8_at(1),
+          modifiers: u8_at(2),
+          flags: u8_at(3),
+          code: u32_at(4),
+          base_code: u32_at(8),
+          x: u32_at(12),
+          y: u32_at(14),
+          text,
+        })
+      }
+      Ok({
+        events,
+        consumed: drain.consumed,
+        count: drain.count,
+        deadline_ns: drain.deadline_ns,
+      })
+    }
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// ot_scene_text_options：前景/背景/属性/对齐。
+pub fn make_text_options(
+  foreground~ : RgbaColor = rgba_white_opaque(),
+  background~ : RgbaColor = (0, 0, 0, 0),
+  attributes~ : UInt32 = 0,
+  align~ : UInt32 = 0,
+) -> TextOptions {
+  let fg = pack_rgba(foreground)
+  let bg = pack_rgba(background)
+  {
+    // 尾部按 8 字节对齐补齐：sizeof(ot_scene_text_options) == 80
+    struct_size: 80,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    foreground01: fg.0,
+    foreground23: fg.1,
+    background01: bg.0,
+    background23: bg.1,
+    attributes,
+    wrap_mode: 0,
+    truncate: 0,
+    first_line_offset: 0,
+    scroll_x: 0.0,
+    scroll_y: 0.0,
+    tab_indicator: 0,
+    tab_color_set: 0,
+    tab_color01: 0,
+    tab_color23: 0,
+    text_align: align,
+  }
+}
+
+///|
+pub fn set_text_options(
+  context : Context,
+  node : OtHandle,
+  options : TextOptions,
+) -> Result[Unit, NativeError] {
+  check(
+    "ot_scene_set_text_options",
+    ot_scene_set_text_options(context, node, options),
+  )
 }

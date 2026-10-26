@@ -103,3 +103,121 @@ pub const OT_BORDER_ALL_SIDES : UInt32 = 15
 ///|
 /// border_style 0：单线边框
 pub const OT_BORDER_SINGLE : UInt32 = 0
+
+///|
+pub const OT_INPUT_KEY : UInt32 = 1
+
+///|
+pub const OT_INPUT_KEY_PRESS : UInt32 = 1
+
+///|
+pub const OT_INPUT_KEY_REPEAT : UInt32 = 2
+
+///|
+pub const OT_INPUT_KEY_RELEASE : UInt32 = 3
+
+///|
+/// modifiers 位（ot_input_event.modifiers）
+pub const OT_INPUT_MOD_SHIFT : UInt32 = 1
+
+///|
+pub const OT_INPUT_MOD_ALT : UInt32 = 2
+
+///|
+pub const OT_INPUT_MOD_CTRL : UInt32 = 4
+
+///|
+pub const OT_INPUT_MOD_SUPER : UInt32 = 8
+
+///|
+/// 功能键 code（Kitty keyboard protocol 赋值；可打印键是 Unicode scalar）
+pub const OT_INPUT_KEY_ESCAPE : UInt32 = 27
+
+///|
+pub const OT_INPUT_KEY_ENTER : UInt32 = 13
+
+///|
+pub const OT_INPUT_KEY_TAB : UInt32 = 9
+
+///|
+pub const OT_INPUT_KEY_BACKSPACE : UInt32 = 127
+
+///|
+pub const OT_INPUT_KEY_INSERT : UInt32 = 57348
+
+///|
+pub const OT_INPUT_KEY_DELETE : UInt32 = 57349
+
+///|
+pub const OT_INPUT_KEY_LEFT : UInt32 = 57350
+
+///|
+pub const OT_INPUT_KEY_RIGHT : UInt32 = 57351
+
+///|
+pub const OT_INPUT_KEY_UP : UInt32 = 57352
+
+///|
+pub const OT_INPUT_KEY_DOWN : UInt32 = 57353
+
+///|
+pub const OT_INPUT_KEY_HOME : UInt32 = 57356
+
+///|
+pub const OT_INPUT_KEY_END : UInt32 = 57357
+
+///|
+pub const OT_PUMP_IDLE : UInt32 = 0
+
+///|
+pub const OT_PUMP_AGAIN : UInt32 = 1
+
+///|
+pub const OT_PUMP_OUTPUT_PENDING : UInt32 = 2
+
+///|
+pub const OT_PUMP_WAIT_UNTIL : UInt32 = 3
+
+///|
+pub const OT_PUMP_CLOSED : UInt32 = 4
+
+///|
+pub const OT_TERMINAL_ALTERNATE_SCREEN : UInt32 = 1
+
+///|
+pub const OT_TERMINAL_CLEAR_ON_CLOSE : UInt32 = 8
+
+///|
+/// ot_session_get_terminal_state 的 phase
+pub const OT_TERMINAL_UNINITIALIZED : UInt32 = 0
+
+///|
+pub const OT_TERMINAL_SETTING_UP : UInt32 = 1
+
+///|
+pub const OT_TERMINAL_ACTIVE : UInt32 = 2
+
+///|
+/// 文本属性位（bits 0..7，标准 SGR：bold, dim, italic, underline, …）
+pub const OT_TEXT_ATTR_BOLD : UInt32 = 1
+
+///|
+pub const OT_TEXT_ATTR_UNDERLINE : UInt32 = 8
+
+///|
+pub const OT_TEXT_ATTR_INVERSE : UInt32 = 32
+
+///|
+pub const OT_INPUT_KEY_PAGE_UP : UInt32 = 57354
+
+///|
+pub const OT_INPUT_KEY_PAGE_DOWN : UInt32 = 57355
+
+///|
+pub const OT_SCENE_ALIGN_LEFT : UInt32 = 0
+
+///|
+pub const OT_SCENE_ALIGN_CENTER : UInt32 = 1
+
+///|
+pub const OT_SCENE_ALIGN_RIGHT : UInt32 = 2

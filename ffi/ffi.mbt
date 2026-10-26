@@ -115,3 +115,63 @@ extern "C" fn ot_session_complete_output(
   ticket : OutputTicket,
   success : UInt32,
 ) -> Int32 = "ot_session_complete_output"
+
+///|
+#borrow(context, session, options)
+extern "C" fn ot_session_setup_terminal(
+  context : Context,
+  session : OtHandle,
+  options : TerminalOptions,
+) -> Int32 = "ot_session_setup_terminal"
+
+///|
+#borrow(context, session, out_result)
+extern "C" fn ot_session_pump(
+  context : Context,
+  session : OtHandle,
+  now_ns : UInt64,
+  work_budget : UInt32,
+  out_result : PumpResultOut,
+) -> Int32 = "ot_session_pump"
+
+///|
+#borrow(context, session, out_written)
+extern "C" fn ot_session_drain_stdout(
+  context : Context,
+  session : OtHandle,
+  max_bytes : UInt32,
+  out_written : FixedArray[UInt32],
+) -> Int32 = "ot_session_drain_stdout"
+
+///|
+// records 是连续的 ot_input_event 数组缓冲（每条 32 字节，capacity = 长度/32）。
+// 不能用 struct 数组：FixedArray[Struct] 是 GC 指针数组（见 types.mbt 陷阱注释）。
+#borrow(context, session, bytes, records, payload, out_drain)
+extern "C" fn ot_session_input_feed(
+  context : Context,
+  session : OtHandle,
+  bytes : FixedArray[Byte],
+  byte_count : UInt32,
+  now_ns : UInt64,
+  records : FixedArray[Byte],
+  capacity : UInt32,
+  payload : FixedArray[Byte],
+  payload_capacity : UInt32,
+  out_drain : InputDrainOut,
+) -> Int32 = "ot_session_input_feed"
+
+///|
+#borrow(context, session, out_phase)
+extern "C" fn ot_session_get_terminal_state(
+  context : Context,
+  session : OtHandle,
+  out_phase : FixedArray[UInt32],
+) -> Int32 = "ot_session_get_terminal_state"
+
+///|
+#borrow(node, options)
+extern "C" fn ot_scene_set_text_options(
+  context : Context,
+  node : OtHandle,
+  options : TextOptions,
+) -> Int32 = "ot_scene_set_text_options"
