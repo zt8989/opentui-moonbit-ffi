@@ -1,5 +1,6 @@
-// ffi 包配置
+// core 包：OpenTUI 原生渲染核心（ot_* C ABI）绑定 + TS 兼容层
 
 import {
+  "zt8989/opentui-moonbit-ffi/packages/keymap",
   "moonbitlang/core/encoding/utf8",
 }

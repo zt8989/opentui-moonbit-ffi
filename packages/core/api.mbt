@@ -736,7 +736,7 @@ pub fn make_text_options(
   background~ : RgbaColor = (0, 0, 0, 0),
   attributes~ : UInt32 = 0,
   align~ : UInt32 = 0,
-) -> TextOptions {
+) -> SceneTextOptions {
   let fg = pack_rgba(foreground)
   let bg = pack_rgba(background)
   {
@@ -765,7 +765,7 @@ pub fn make_text_options(
 pub fn set_text_options(
   context : Context,
   node : OtHandle,
-  options : TextOptions,
+  options : SceneTextOptions,
 ) -> Result[Unit, NativeError] {
   check(
     "ot_scene_set_text_options",

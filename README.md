@@ -30,15 +30,26 @@
 │   │   ├── types.mbt           # C 结构体声明（含布局兼容性注释）
 │   │   ├── consts.mbt          # opentui.h 常量
 │   │   ├── ffi.mbt             # extern "C" 原始绑定
-│   │   ├── api.mbt             # 高层 API：Result 错误处理、记录头填充、颜色打包
+│   │   ├── api.mbt             # 底层 API：Result 错误处理、记录头填充、颜色打包
+│   │   ├── color.mbt           # TS 风格颜色字符串解析（#rrggbb/transparent…）
+│   │   ├── ui_style.mbt        # StyleBuilder：ot_scene_flush 布局属性记录
+│   │   ├── ui_node.mbt         # TS 兼容层：Renderable/Box/Text（new_box/new_text）
+│   │   ├── ui_renderer.mbt     # TS 兼容层：Renderer（create/root/add/render/on_key/run）
+│   │   ├── ui_terminal.mbt     # 终端 raw mode、stdin、输入事件→KeyStroke
 │   │   └── ffi_test.mbt        # 纯 MoonBit 侧单元测试
 │   ├── keymap/                 # @opentui/keymap 核心的 MoonBit 移植
 │   │   ├── keys.mbt            # stroke 解析（"ctrl+shift+a"）与规范显示
 │   │   ├── keymap.mbt          # 绑定注册、序列匹配、命令 dispatch
 │   │   └── keymap_test.mbt     # dispatch 语义单元测试
-│   └── examples/               # 可执行示例（每例一个子包）
-│       ├── hello/              # box + label，输出 .ansi（对应 C 指南）
-│       └── keymap-demo/        # 交互式 TUI（raw mode + input_feed + keymap）
+│   └── examples/               # 可执行示例（每例一个子包，均为 TS 兼容层映射）
+│       ├── hello/              # box + label，输出 .ansi（对应 C 指南，底层 API）
+│       ├── keymap-demo/        # 交互式 TUI（keymap 驱动的选中列表）
+│       ├── simple-layout/      # flex 四种布局切换（1-4 键）
+│       ├── relative-positioning/ # absolute 定位方块移动（方向键）
+│       ├── nested-zindex/      # z-index 叠放轮转（z 键）
+│       ├── opacity/            # 四层透明度切换（1-4 键）
+│       ├── text-wrap/          # 换行模式 none/char/word（w 键）
+│       └── text-truncation/    # 截断开关（t 键）
 ├── scripts/fetch-opentui.sh    # 克隆并构建 OpenTUI 原生库
 └── vendor/dist/<target>/       # opentui.h + libopentui（git 忽略，脚本生成）
 ```
@@ -65,6 +76,32 @@ moon run cmd/keymap-demo --release   # 交互式 TUI（需要真实终端）
 moon test --target native
 moon fmt
 ```
+
+## core 的 TS 兼容层
+
+`packages/core` 分两层：底层是 `ot_*` C ABI 绑定（types/consts/ffi/api.mbt），
+上层是与 `@opentui/core` API 对齐的 TS 兼容层（ui_*.mbt + color.mbt）。
+移植 examples 时按 TS 代码直译即可：
+
+```moonbit
+let renderer = @core.Renderer::create(background="#1a1a2e")
+// new BoxRenderable(renderer, { width: 42, backgroundColor: "#16213e", border: true })
+let header = @core.new_box(renderer, width="42", background="#16213e", border=true)
+// new TextRenderable(renderer, { content: "...", fg: "#e94560" })
+header.add(@core.new_text(renderer, content="...", fg="#e94560", attributes="bold"))
+renderer.root().add(header)
+renderer.on_key(fn(stroke) { ... renderer.render() })
+renderer.run()
+```
+
+- 属性取值用 TS 风格字符串：`"42"`（单元格）、`"50%"`、`"auto"`；
+  颜色 `#rrggbb` / `#rgba` / `transparent` / 少量命名色；
+  枚举 `"row"` / `"center"` / `"space-between"` / `"absolute"` 等。
+- setter 立即提交：布局属性走 `ot_scene_flush` 属性记录流，绘制属性走
+  paint 记录整体替换（内部缓存全量重建），文本走 text options。
+- `Renderable::update_style(fn(b, h) { ... })` 可把多条布局变更合并为
+  一次 flush。
+- 解析失败按默认值处理（lossy），保证 UI 不因拼写错误崩溃。
 
 ## keymap 包（@opentui/keymap 核心移植）
 

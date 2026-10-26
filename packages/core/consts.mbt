@@ -221,3 +221,193 @@ pub const OT_SCENE_ALIGN_CENTER : UInt32 = 1
 
 ///|
 pub const OT_SCENE_ALIGN_RIGHT : UInt32 = 2
+
+///|
+/// style 记录的字段类型（ot_scene_style_property 的 group）
+pub const OT_STYLE_ENUM : UInt32 = 0
+
+///|
+pub const OT_STYLE_FLOAT : UInt32 = 1
+
+///|
+pub const OT_STYLE_VALUE : UInt32 = 2
+
+///|
+pub const OT_STYLE_DIMENSION : UInt32 = 4
+
+///|
+/// VALUE 组 kind
+pub const OT_STYLE_VALUE_WIDTH : UInt32 = 0
+
+///|
+pub const OT_STYLE_VALUE_HEIGHT : UInt32 = 1
+
+///|
+pub const OT_STYLE_VALUE_FLEX_BASIS : UInt32 = 6
+
+///|
+pub const OT_STYLE_VALUE_MARGIN : UInt32 = 7
+
+///|
+pub const OT_STYLE_VALUE_PADDING : UInt32 = 8
+
+///|
+pub const OT_STYLE_VALUE_POSITION : UInt32 = 9
+
+///|
+pub const OT_STYLE_VALUE_GAP : UInt32 = 10
+
+///|
+/// FLOAT 组 kind
+pub const OT_STYLE_FLOAT_FLEX_GROW : UInt32 = 1
+
+///|
+pub const OT_STYLE_FLOAT_FLEX_SHRINK : UInt32 = 2
+
+///|
+/// ENUM 组 kind
+pub const OT_STYLE_ENUM_FLEX_DIRECTION : UInt32 = 1
+
+///|
+pub const OT_STYLE_ENUM_JUSTIFY_CONTENT : UInt32 = 2
+
+///|
+pub const OT_STYLE_ENUM_ALIGN_ITEMS : UInt32 = 4
+
+///|
+pub const OT_STYLE_ENUM_ALIGN_SELF : UInt32 = 5
+
+///|
+pub const OT_STYLE_ENUM_POSITION_TYPE : UInt32 = 6
+
+///|
+pub const OT_STYLE_ENUM_OVERFLOW : UInt32 = 8
+
+///|
+/// flags
+pub const OT_STYLE_FLAGS_NONE : UInt32 = 0
+
+///|
+pub const OT_STYLE_DISABLE_FLEX_SHRINK : UInt32 = 1
+
+///|
+/// 计量单位
+pub const OT_UNIT_UNDEFINED : UInt32 = 0
+
+///|
+pub const OT_UNIT_POINT : UInt32 = 1
+
+///|
+pub const OT_UNIT_PERCENT : UInt32 = 2
+
+///|
+pub const OT_UNIT_AUTO : UInt32 = 3
+
+///|
+/// 边（VALUE MARGIN/PADDING/POSITION 的 edge）
+pub const OT_EDGE_NONE : UInt32 = 0
+
+///|
+pub const OT_EDGE_LEFT : UInt32 = 0
+
+///|
+pub const OT_EDGE_TOP : UInt32 = 1
+
+///|
+pub const OT_EDGE_RIGHT : UInt32 = 2
+
+///|
+pub const OT_EDGE_BOTTOM : UInt32 = 3
+
+///|
+pub const OT_EDGE_ALL : UInt32 = 8
+
+///|
+/// ot_scene_flush 属性位：STYLE 必须是记录的唯一字段位
+pub const OT_SCENE_PROPERTY_STYLE : UInt32 = 2048
+
+///|
+/// flex direction 枚举（Yoga；column=0 排最前）
+pub const OT_FLEX_DIRECTION_COLUMN : UInt32 = 0
+
+///|
+pub const OT_FLEX_DIRECTION_COLUMN_REVERSE : UInt32 = 1
+
+///|
+pub const OT_FLEX_DIRECTION_ROW : UInt32 = 2
+
+///|
+pub const OT_FLEX_DIRECTION_ROW_REVERSE : UInt32 = 3
+
+///|
+/// justify-content 枚举
+pub const OT_JUSTIFY_FLEX_START : UInt32 = 0
+
+///|
+pub const OT_JUSTIFY_CENTER : UInt32 = 1
+
+///|
+pub const OT_JUSTIFY_FLEX_END : UInt32 = 2
+
+///|
+pub const OT_JUSTIFY_SPACE_BETWEEN : UInt32 = 3
+
+///|
+pub const OT_JUSTIFY_SPACE_AROUND : UInt32 = 4
+
+///|
+pub const OT_JUSTIFY_SPACE_EVENLY : UInt32 = 5
+
+///|
+/// align-items / align-self 枚举
+pub const OT_ALIGN_AUTO : UInt32 = 0
+
+///|
+pub const OT_ALIGN_FLEX_START : UInt32 = 1
+
+///|
+pub const OT_ALIGN_CENTER : UInt32 = 2
+
+///|
+pub const OT_ALIGN_FLEX_END : UInt32 = 3
+
+///|
+pub const OT_ALIGN_STRETCH : UInt32 = 4
+
+///|
+pub const OT_ALIGN_BASELINE : UInt32 = 5
+
+///|
+/// position-type 枚举
+pub const OT_POSITION_RELATIVE : UInt32 = 1
+
+///|
+pub const OT_POSITION_ABSOLUTE : UInt32 = 2
+
+///|
+/// overflow 枚举
+pub const OT_OVERFLOW_VISIBLE : UInt32 = 0
+
+///|
+pub const OT_OVERFLOW_HIDDEN : UInt32 = 1
+
+///|
+/// 文本换行（ot_scene_text_options.wrap_mode）
+pub const OT_SCENE_WRAP_NONE : UInt32 = 0
+
+///|
+pub const OT_SCENE_WRAP_CHAR : UInt32 = 1
+
+///|
+pub const OT_SCENE_WRAP_WORD : UInt32 = 2
+
+///|
+/// display 枚举
+pub const OT_DISPLAY_FLEX : UInt32 = 0
+
+///|
+pub const OT_DISPLAY_NONE : UInt32 = 1
+
+///|
+/// ENUM 组 kind：display
+pub const OT_STYLE_ENUM_DISPLAY : UInt32 = 9

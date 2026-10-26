@@ -186,8 +186,9 @@ priv struct TerminalOptions {
 }
 
 ///|
-/// C: ot_scene_text_options，sizeof == 76。文本前景/背景/属性/对齐。
-struct TextOptions {
+/// C: ot_scene_text_options，sizeof == 80（尾部按 8 字节对齐补齐）。
+/// 文本前景/背景/属性/对齐。TS 兼容层的选项结构见 ui_node.mbt。
+struct SceneTextOptions {
   struct_size : UInt32
   abi_version : UInt32
   foreground01 : UInt32

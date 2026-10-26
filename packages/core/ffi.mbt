@@ -173,5 +173,14 @@ extern "C" fn ot_session_get_terminal_state(
 extern "C" fn ot_scene_set_text_options(
   context : Context,
   node : OtHandle,
-  options : TextOptions,
+  options : SceneTextOptions,
 ) -> Int32 = "ot_scene_set_text_options"
+
+///|
+#borrow(updates, out_applied)
+extern "C" fn ot_scene_flush(
+  context : Context,
+  updates : Bytes,
+  byte_count : UInt32,
+  out_applied : FixedArray[UInt32],
+) -> Int32 = "ot_scene_flush"
