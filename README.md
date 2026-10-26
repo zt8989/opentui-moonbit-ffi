@@ -21,22 +21,32 @@
 
 ## 目录结构
 
+目录布局对齐 OpenTUI 仓库的 packages 结构：
+
 ```
-├── ffi/                        # MoonBit FFI 绑定包
-│   ├── types.mbt               # C 结构体声明（含布局兼容性注释）
-│   ├── consts.mbt              # opentui.h 常量
-│   ├── ffi.mbt                 # extern "C" 原始绑定
-│   ├── api.mbt                 # 高层 API：Result 错误处理、记录头填充、颜色打包
-│   └── ffi_test.mbt            # 纯 MoonBit 侧单元测试
-├── keymap/                     # @opentui/keymap 核心的 MoonBit 移植
-│   ├── keys.mbt                # stroke 解析（"ctrl+shift+a"）与规范显示
-│   ├── keymap.mbt              # 绑定注册、序列匹配、命令 dispatch
-│   └── keymap_test.mbt         # dispatch 语义单元测试
-├── cmd/main/                   # 示例一：box + label，输出 .ansi
-├── cmd/keymap-demo/            # 示例二：交互式 TUI（raw mode + input_feed + keymap）
+├── packages/
+│   ├── core/                   # OpenTUI 原生渲染核心（ot_* C ABI）的绑定包
+│   │   │                       # （import 别名 @core，对应 @opentui/core 的位置）
+│   │   ├── types.mbt           # C 结构体声明（含布局兼容性注释）
+│   │   ├── consts.mbt          # opentui.h 常量
+│   │   ├── ffi.mbt             # extern "C" 原始绑定
+│   │   ├── api.mbt             # 高层 API：Result 错误处理、记录头填充、颜色打包
+│   │   └── ffi_test.mbt        # 纯 MoonBit 侧单元测试
+│   ├── keymap/                 # @opentui/keymap 核心的 MoonBit 移植
+│   │   ├── keys.mbt            # stroke 解析（"ctrl+shift+a"）与规范显示
+│   │   ├── keymap.mbt          # 绑定注册、序列匹配、命令 dispatch
+│   │   └── keymap_test.mbt     # dispatch 语义单元测试
+│   └── examples/               # 可执行示例（每例一个子包）
+│       ├── hello/              # box + label，输出 .ansi（对应 C 指南）
+│       └── keymap-demo/        # 交互式 TUI（raw mode + input_feed + keymap）
 ├── scripts/fetch-opentui.sh    # 克隆并构建 OpenTUI 原生库
 └── vendor/dist/<target>/       # opentui.h + libopentui（git 忽略，脚本生成）
 ```
+
+与上游的对应关系：`packages/core` 绑定的是 OpenTUI 原生渲染器的
+`ot_*` C ABI（即 packages/native 的产物），不是上游 TypeScript 层的
+`@opentui/core`（Renderable/CliRenderer）；`packages/keymap` 与
+`packages/examples` 的角色与上游一致。
 
 ## 快速开始
 

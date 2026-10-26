@@ -36,7 +36,7 @@ fn main {
 }
 
 ///|
-fn[T] ok(r : Result[T, @ffi.NativeError]) -> T raise Failure {
+fn[T] ok(r : Result[T, @core.NativeError]) -> T raise Failure {
   match r {
     Ok(v) => v
     Err(e) => raise Failure(e.to_string())
@@ -53,10 +53,10 @@ fn run() -> Unit raise Failure {
   let area_height : UInt32 = 3
 
   // 对象槽位与帧单元格上限按这个小示例设定，不是总内存预算。
-  let context = ok(@ffi.create_context(object_capacity=8, render_cells_max=36))
+  let context = ok(@core.create_context(object_capacity=8, render_cells_max=36))
   // 两个 4KiB 块、共 8KiB 的输出队列容量足够两帧小画面。
   let session = ok(
-    @ffi.create_session(
+    @core.create_session(
       context,
       chunk_size=4096,
       span_capacity=2,
@@ -65,29 +65,36 @@ fn run() -> Unit raise Failure {
   )
   // remote = 1：不继承本地终端环境设置。
   ok(
-    @ffi.attach_renderer(context, session, width=area_width, height=area_height),
+    @core.attach_renderer(
+      context,
+      session,
+      width=area_width,
+      height=area_height,
+    ),
   )
 
   // 先建 root（第一个节点必须是 root），再建 box 与 label。
   // 1/2/3 是应用自选的公开节点号，不能为 0。
-  let root = ok(@ffi.create_node(context, session, @ffi.OT_SCENE_ROOT, num=1))
-  let panel = ok(@ffi.create_node(context, session, @ffi.OT_SCENE_BOX, num=2))
-  let label = ok(@ffi.create_node(context, session, @ffi.OT_SCENE_TEXT, num=3))
+  let root = ok(@core.create_node(context, session, @core.OT_SCENE_ROOT, num=1))
+  let panel = ok(@core.create_node(context, session, @core.OT_SCENE_BOX, num=2))
+  let label = ok(
+    @core.create_node(context, session, @core.OT_SCENE_TEXT, num=3),
+  )
 
   // paint 记录整体替换节点绘制属性；默认白边框、不透明。
-  ok(@ffi.set_paint(context, panel, @ffi.make_paint_options()))
-  ok(@ffi.set_text(context, label, "Hello"))
-  ok(@ffi.move_node(context, panel, root, index=0))
-  ok(@ffi.move_node(context, label, panel, index=0))
+  ok(@core.set_paint(context, panel, @core.make_paint_options()))
+  ok(@core.set_text(context, label, "Hello"))
+  ok(@core.move_node(context, panel, root, index=0))
+  ok(@core.move_node(context, label, panel, index=0))
 
   write_frame(context, session, "hello.ansi")
 
   // 同一棵场景树：只改 label 的内容，再渲染一帧。
-  ok(@ffi.set_text(context, label, "Ready"))
+  ok(@core.set_text(context, label, "Ready"))
   write_frame(context, session, "ready.ansi")
 
-  ok(@ffi.close_session(context, session))
-  ok(@ffi.destroy_context(context))
+  ok(@core.close_session(context, session))
+  ok(@core.destroy_context(context))
   println("written: hello.ansi, ready.ansi")
 }
 
@@ -95,31 +102,31 @@ fn run() -> Unit raise Failure {
 /// 渲染一帧并把它排队输出全部交付到文件后返回，
 /// 因此下一次调用可以立刻渲染下一帧。
 fn write_frame(
-  context : @ffi.Context,
-  session : @ffi.OtHandle,
+  context : @core.Context,
+  session : @core.OtHandle,
   path : String,
 ) -> Unit raise Failure {
   let file = fopen_ffi(@utf8.encode(path), b"wb")
   if file == 0L {
     raise Failure("fopen \{path} failed")
   }
-  let frame = ok(@ffi.paint(context, session))
-  let outcome = ok(@ffi.commit_frame(context, session, frame))
+  let frame = ok(@core.paint(context, session))
+  let outcome = ok(@core.commit_frame(context, session, frame))
   // SKIPPED（输出背压）与 FAILED（编码/容量失败）都会丢帧，这里显式报错。
-  if outcome != @ffi.OT_RENDER_PENDING && outcome != @ffi.OT_RENDER_PRESENTED {
+  if outcome != @core.OT_RENDER_PENDING && outcome != @core.OT_RENDER_PRESENTED {
     let _ = fclose_ffi(file)
     raise Failure("frame not accepted: outcome \{outcome}")
   }
   let buf : FixedArray[Byte] = FixedArray::make(512, 0)
   while true {
-    let ticket = ok(@ffi.read_output(context, session, buf))
+    let ticket = ok(@core.read_output(context, session, buf))
     let count = ticket.byte_count
     if count == 0 {
       break
     }
     let delivered = fwrite_ffi(buf, 1UL, count.to_uint64(), file) ==
       count.to_uint64()
-    ok(@ffi.complete_output(context, session, ticket, success=delivered))
+    ok(@core.complete_output(context, session, ticket, success=delivered))
     if !delivered {
       let _ = fclose_ffi(file)
       raise Failure("write to \{path} failed")

@@ -1,0 +1,18 @@
+pkgtype(kind: "executable")
+
+// 可执行包：链接 OpenTUI 原生库。
+// cc-link-flags 在项目根目录下传给 cc；rpath 使可执行文件在
+// _build/native/<profile>/build/packages/examples/<demo>/ 下也能找到 vendor 内的 dylib。
+
+import {
+  "zt8989/opentui-moonbit-ffi/packages/core",
+  "moonbitlang/core/encoding/utf8",
+}
+
+options(
+  link: {
+    "native": {
+      "cc-link-flags": "-Lvendor/dist/aarch64-macos -Wl,-rpath,@executable_path/../../../../../../../vendor/dist/aarch64-macos -lopentui",
+    },
+  },
+)

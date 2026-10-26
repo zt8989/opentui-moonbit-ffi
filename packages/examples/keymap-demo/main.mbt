@@ -39,7 +39,7 @@ fn main {
 }
 
 ///|
-fn[T] ok(r : Result[T, @ffi.NativeError]) -> T raise {
+fn[T] ok(r : Result[T, @core.NativeError]) -> T raise {
   match r {
     Ok(v) => v
     Err(e) => raise Failure(e.to_string())
@@ -60,10 +60,10 @@ fn run() -> Unit raise {
 
   // 终端 setup 需要预留 control 输出容量（OT_SESSION_CONTROL_PACKET_BYTES）。
   let context = ok(
-    @ffi.create_context(object_capacity=64, render_cells_max=width * height),
+    @core.create_context(object_capacity=64, render_cells_max=width * height),
   )
   let session = ok(
-    @ffi.create_session(
+    @core.create_session(
       context,
       chunk_size=4096,
       span_capacity=8,
@@ -71,14 +71,14 @@ fn run() -> Unit raise {
       control_capacity=4096,
     ),
   )
-  ok(@ffi.attach_renderer(context, session, width~, height~))
-  ok(@ffi.setup_terminal(context, session, alternate_screen=true))
+  ok(@core.attach_renderer(context, session, width~, height~))
+  ok(@core.setup_terminal(context, session, alternate_screen=true))
 
   // 泵送 setup 输出直到终端就绪。
-  while ok(@ffi.terminal_state(context, session)) != @ffi.OT_TERMINAL_ACTIVE {
-    let p = ok(@ffi.pump(context, session, now_ns()))
-    let _ = ok(@ffi.drain_stdout(context, session))
-    if p.status() == @ffi.OT_PUMP_CLOSED {
+  while ok(@core.terminal_state(context, session)) != @core.OT_TERMINAL_ACTIVE {
+    let p = ok(@core.pump(context, session, now_ns()))
+    let _ = ok(@core.drain_stdout(context, session))
+    if p.status() == @core.OT_PUMP_CLOSED {
       raise Failure("terminal closed during setup")
     }
   }
@@ -100,11 +100,12 @@ fn run() -> Unit raise {
   let buf : FixedArray[Byte] = FixedArray::make(256, 0)
   let mut quit = false
   while !quit {
-    let p = ok(@ffi.pump(context, session, now_ns()))
+    let p = ok(@core.pump(context, session, now_ns()))
     match p.status() {
       status =>
-        if status == @ffi.OT_PUMP_OUTPUT_PENDING || status == @ffi.OT_PUMP_AGAIN {
-          let _ = ok(@ffi.drain_stdout(context, session))
+        if status == @core.OT_PUMP_OUTPUT_PENDING ||
+          status == @core.OT_PUMP_AGAIN {
+          let _ = ok(@core.drain_stdout(context, session))
         }
     }
     let n = read_stdin(buf)
@@ -116,14 +117,15 @@ fn run() -> Unit raise {
       break
     }
     let fed = ok(
-      @ffi.input_feed(context, session, buf, n.reinterpret_as_uint(), now_ns()),
+      @core.input_feed(context, session, buf, n.reinterpret_as_uint(), now_ns()),
     )
     for ev in fed.events() {
-      if ev.kind() != @ffi.OT_INPUT_KEY {
+      if ev.kind() != @core.OT_INPUT_KEY {
         continue
       }
       let action = ev.action()
-      if action != @ffi.OT_INPUT_KEY_PRESS && action != @ffi.OT_INPUT_KEY_REPEAT {
+      if action != @core.OT_INPUT_KEY_PRESS &&
+        action != @core.OT_INPUT_KEY_REPEAT {
         continue
       }
       match stroke_of(ev) {
@@ -168,16 +170,16 @@ fn run() -> Unit raise {
     render(rows, context, session, items, selected, status_text)
   }
 
-  ok(@ffi.close_session(context, session))
+  ok(@core.close_session(context, session))
   // 继续泵送直到终端恢复输出全部交付。
   while true {
-    let p = ok(@ffi.pump(context, session, now_ns()))
-    let _ = @ffi.drain_stdout(context, session)
-    if p.status() == @ffi.OT_PUMP_CLOSED {
+    let p = ok(@core.pump(context, session, now_ns()))
+    let _ = @core.drain_stdout(context, session)
+    if p.status() == @core.OT_PUMP_CLOSED {
       break
     }
   }
-  ok(@ffi.destroy_context(context))
+  ok(@core.destroy_context(context))
 }
 
 ///|
@@ -202,54 +204,60 @@ fn build_keymap() -> @keymap.Keymap raise {
 /// 搭建场景：root → panel(box) → [title, rows…, status, help]，
 /// 返回菜单行的 text 节点。
 fn build_ui(
-  context : @ffi.Context,
-  session : @ffi.OtHandle,
+  context : @core.Context,
+  session : @core.OtHandle,
   km : @keymap.Keymap,
   items : Array[Item],
-) -> Array[@ffi.OtHandle] raise {
-  let root = ok(@ffi.create_node(context, session, @ffi.OT_SCENE_ROOT, num=1))
-  let panel = ok(@ffi.create_node(context, session, @ffi.OT_SCENE_BOX, num=2))
-  ok(@ffi.set_paint(context, panel, @ffi.make_paint_options()))
-  ok(@ffi.move_node(context, panel, root, index=0))
-  let title = ok(@ffi.create_node(context, session, @ffi.OT_SCENE_TEXT, num=3))
-  ok(@ffi.set_text(context, title, "OpenTUI keymap demo (MoonBit FFI)"))
+) -> Array[@core.OtHandle] raise {
+  let root = ok(@core.create_node(context, session, @core.OT_SCENE_ROOT, num=1))
+  let panel = ok(@core.create_node(context, session, @core.OT_SCENE_BOX, num=2))
+  ok(@core.set_paint(context, panel, @core.make_paint_options()))
+  ok(@core.move_node(context, panel, root, index=0))
+  let title = ok(
+    @core.create_node(context, session, @core.OT_SCENE_TEXT, num=3),
+  )
+  ok(@core.set_text(context, title, "OpenTUI keymap demo (MoonBit FFI)"))
   ok(
-    @ffi.set_text_options(
+    @core.set_text_options(
       context,
       title,
-      @ffi.make_text_options(
+      @core.make_text_options(
         foreground=(255, 255, 0, 255),
-        attributes=@ffi.OT_TEXT_ATTR_BOLD,
-        align=@ffi.OT_SCENE_ALIGN_CENTER,
+        attributes=@core.OT_TEXT_ATTR_BOLD,
+        align=@core.OT_SCENE_ALIGN_CENTER,
       ),
     ),
   )
-  ok(@ffi.move_node(context, title, panel, index=0))
-  let rows : Array[@ffi.OtHandle] = []
+  ok(@core.move_node(context, title, panel, index=0))
+  let rows : Array[@core.OtHandle] = []
   for i, _item in items {
     let row = ok(
-      @ffi.create_node(
+      @core.create_node(
         context,
         session,
-        @ffi.OT_SCENE_TEXT,
+        @core.OT_SCENE_TEXT,
         num=(4 + i).reinterpret_as_uint(),
       ),
     )
-    ok(@ffi.move_node(context, row, panel, index=(i + 1).reinterpret_as_uint()))
+    ok(
+      @core.move_node(context, row, panel, index=(i + 1).reinterpret_as_uint()),
+    )
     rows.push(row)
   }
   let status = ok(
-    @ffi.create_node(context, session, @ffi.OT_SCENE_TEXT, num=104),
+    @core.create_node(context, session, @core.OT_SCENE_TEXT, num=104),
   )
   ok(
-    @ffi.move_node(
+    @core.move_node(
       context,
       status,
       panel,
       index=(items.length() + 1).reinterpret_as_uint(),
     ),
   )
-  let help = ok(@ffi.create_node(context, session, @ffi.OT_SCENE_TEXT, num=105))
+  let help = ok(
+    @core.create_node(context, session, @core.OT_SCENE_TEXT, num=105),
+  )
   let help_text = km
     .binding_help()
     .map(fn(row) {
@@ -257,16 +265,16 @@ fn build_ui(
       "\{keys} \{desc}"
     })
     .join("   ")
-  ok(@ffi.set_text(context, help, help_text))
+  ok(@core.set_text(context, help, help_text))
   ok(
-    @ffi.set_text_options(
+    @core.set_text_options(
       context,
       help,
-      @ffi.make_text_options(foreground=(120, 120, 140, 255)),
+      @core.make_text_options(foreground=(120, 120, 140, 255)),
     ),
   )
   ok(
-    @ffi.move_node(
+    @core.move_node(
       context,
       help,
       panel,
@@ -280,9 +288,9 @@ fn build_ui(
 ///|
 /// 重绘文本行并渲染一帧。
 fn render(
-  rows : Array[@ffi.OtHandle],
-  context : @ffi.Context,
-  session : @ffi.OtHandle,
+  rows : Array[@core.OtHandle],
+  context : @core.Context,
+  session : @core.OtHandle,
   items : Array[Item],
   selected : Int32,
   status_text : String,
@@ -290,58 +298,58 @@ fn render(
   for i, item in items {
     let row = rows[i]
     let marker = if item.checked { "[x]" } else { "[ ]" }
-    ok(@ffi.set_text(context, row, " \{marker} \{item.label}"))
+    ok(@core.set_text(context, row, " \{marker} \{item.label}"))
     let options = if i == selected {
-      @ffi.make_text_options(
+      @core.make_text_options(
         foreground=(0, 0, 0, 255),
         background=(255, 255, 0, 255),
-        attributes=@ffi.OT_TEXT_ATTR_BOLD,
+        attributes=@core.OT_TEXT_ATTR_BOLD,
       )
     } else {
-      @ffi.make_text_options(foreground=(220, 220, 220, 255))
+      @core.make_text_options(foreground=(220, 220, 220, 255))
     }
-    ok(@ffi.set_text_options(context, row, options))
+    ok(@core.set_text_options(context, row, options))
   }
   let status_row = rows[items.length()]
-  ok(@ffi.set_text(context, status_row, " \{status_text}"))
-  let frame = ok(@ffi.paint(context, session))
-  let outcome = ok(@ffi.commit_frame(context, session, frame))
-  if outcome != @ffi.OT_RENDER_PENDING && outcome != @ffi.OT_RENDER_PRESENTED {
+  ok(@core.set_text(context, status_row, " \{status_text}"))
+  let frame = ok(@core.paint(context, session))
+  let outcome = ok(@core.commit_frame(context, session, frame))
+  if outcome != @core.OT_RENDER_PENDING && outcome != @core.OT_RENDER_PRESENTED {
     raise Failure("frame not accepted: outcome \{outcome}")
   }
-  let _ = ok(@ffi.drain_stdout(context, session))
+  let _ = ok(@core.drain_stdout(context, session))
 }
 
 ///|
 /// 从输入事件重建 KeyStroke（键名规则见 ffi.OT_INPUT_KEY_*）。
-fn stroke_of(ev : @ffi.InputEvent) -> @keymap.KeyStroke? raise {
+fn stroke_of(ev : @core.InputEvent) -> @keymap.KeyStroke? raise {
   let code = ev.code()
   let m = ev.modifiers()
   let name : String = match code {
     c =>
-      if c == @ffi.OT_INPUT_KEY_ENTER {
+      if c == @core.OT_INPUT_KEY_ENTER {
         "enter"
-      } else if c == @ffi.OT_INPUT_KEY_ESCAPE {
+      } else if c == @core.OT_INPUT_KEY_ESCAPE {
         "escape"
-      } else if c == @ffi.OT_INPUT_KEY_TAB {
+      } else if c == @core.OT_INPUT_KEY_TAB {
         "tab"
-      } else if c == @ffi.OT_INPUT_KEY_BACKSPACE {
+      } else if c == @core.OT_INPUT_KEY_BACKSPACE {
         "backspace"
-      } else if c == @ffi.OT_INPUT_KEY_LEFT {
+      } else if c == @core.OT_INPUT_KEY_LEFT {
         "left"
-      } else if c == @ffi.OT_INPUT_KEY_RIGHT {
+      } else if c == @core.OT_INPUT_KEY_RIGHT {
         "right"
-      } else if c == @ffi.OT_INPUT_KEY_UP {
+      } else if c == @core.OT_INPUT_KEY_UP {
         "up"
-      } else if c == @ffi.OT_INPUT_KEY_DOWN {
+      } else if c == @core.OT_INPUT_KEY_DOWN {
         "down"
-      } else if c == @ffi.OT_INPUT_KEY_HOME {
+      } else if c == @core.OT_INPUT_KEY_HOME {
         "home"
-      } else if c == @ffi.OT_INPUT_KEY_END {
+      } else if c == @core.OT_INPUT_KEY_END {
         "end"
-      } else if c == @ffi.OT_INPUT_KEY_PAGE_UP {
+      } else if c == @core.OT_INPUT_KEY_PAGE_UP {
         "pageup"
-      } else if c == @ffi.OT_INPUT_KEY_PAGE_DOWN {
+      } else if c == @core.OT_INPUT_KEY_PAGE_DOWN {
         "pagedown"
       } else if c == 32 {
         "space"
@@ -354,10 +362,10 @@ fn stroke_of(ev : @ffi.InputEvent) -> @keymap.KeyStroke? raise {
   Some(
     @keymap.KeyStroke::make(
       name,
-      ctrl=(m & @ffi.OT_INPUT_MOD_CTRL) != 0,
-      shift=(m & @ffi.OT_INPUT_MOD_SHIFT) != 0,
-      meta=(m & @ffi.OT_INPUT_MOD_ALT) != 0,
-      super_=(m & @ffi.OT_INPUT_MOD_SUPER) != 0,
+      ctrl=(m & @core.OT_INPUT_MOD_CTRL) != 0,
+      shift=(m & @core.OT_INPUT_MOD_SHIFT) != 0,
+      meta=(m & @core.OT_INPUT_MOD_ALT) != 0,
+      super_=(m & @core.OT_INPUT_MOD_SUPER) != 0,
     ),
   )
 }
