@@ -99,3 +99,20 @@ pub fn stroke_of_event(ev : InputEvent) -> @keymap.KeyStroke? raise {
     ),
   )
 }
+
+///|
+/// 终端生命周期阶段名（OT_TERMINAL_*）。
+pub fn terminal_state_name_of(state : UInt32) -> String {
+  match state {
+    0 => "uninitialized"
+    1 => "setting-up"
+    2 => "active"
+    3 => "suspending"
+    4 => "suspended"
+    5 => "resuming"
+    6 => "closing"
+    7 => "restored"
+    8 => "failed"
+    _ => "unknown"
+  }
+}
