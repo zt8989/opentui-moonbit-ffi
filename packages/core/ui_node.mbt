@@ -10,6 +10,7 @@ pub enum NodeKind {
   SliderNode
   CustomNode
   EditorNode
+  TextViewNode
 }
 
 ///|
@@ -309,6 +310,8 @@ pub fn new_box(
   node.set_should_fill_internal(options.should_fill)
   node.set_opacity_internal(options.opacity)
   node.set_z_index_internal(options.z_index)
+  // 构造期提交：set_*_internal 只改缓存，paint 是整体替换记录
+  let _ = apply_paint(renderer.context, node, node.build_paint())
   // 初始布局样式：一次 flush
   let builder = StyleBuilder::new()
   builder.set_width(node.handle, options.width)
@@ -559,8 +562,7 @@ fn Renderable::set_border_internal(
   color : String,
 ) -> Unit {
   self.border_sides = if on { OT_BORDER_ALL_SIDES } else { 0 }
-  // 原生 border_style：0 = single
-  self.border_style = if style == "single" { 0 } else { 0 }
+  self.border_style = parse_border_style(style)
   self.border_color = parse_color_lossy(color)
 }
 

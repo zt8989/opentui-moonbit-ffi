@@ -105,6 +105,26 @@ pub const OT_BORDER_ALL_SIDES : UInt32 = 15
 pub const OT_BORDER_SINGLE : UInt32 = 0
 
 ///|
+pub const OT_BORDER_DOUBLE : UInt32 = 1
+
+///|
+pub const OT_BORDER_ROUNDED : UInt32 = 2
+
+///|
+pub const OT_BORDER_HEAVY : UInt32 = 3
+
+///|
+/// 边框风格字符串 → 原生编号（未知值回退 single）。
+pub fn parse_border_style(style : String) -> UInt32 {
+  match style {
+    "double" => OT_BORDER_DOUBLE
+    "rounded" => OT_BORDER_ROUNDED
+    "heavy" => OT_BORDER_HEAVY
+    _ => OT_BORDER_SINGLE
+  }
+}
+
+///|
 pub const OT_INPUT_KEY : UInt32 = 1
 
 ///|
@@ -613,8 +633,38 @@ pub const OT_LAYOUT_PAINT : UInt32 = 2
 pub const OT_SCENE_EDITOR : UInt32 = 5
 
 ///|
-/// 编辑缓冲命令（ot_edit_buffer_command）
-pub const OT_EDIT_COMMAND_GOTO_LINE : UInt32 = 6
+pub const OT_SCENE_TEXT_VIEW : UInt32 = 7
+
+///|
+pub const OT_SCENE_IMAGE : UInt32 = 8
+
+///|
+/// 编辑缓冲命令（ot_edit_buffer_command）：完整集，见 opentui.h
+pub const OT_EDIT_DELETE_FORWARD : UInt32 = 0
+
+///|
+pub const OT_EDIT_BACKSPACE : UInt32 = 1
+
+///|
+pub const OT_EDIT_NEW_LINE : UInt32 = 2
+
+///|
+pub const OT_EDIT_DELETE_LINE : UInt32 = 3
+
+///|
+pub const OT_EDIT_MOVE_LEFT : UInt32 = 4
+
+///|
+pub const OT_EDIT_MOVE_RIGHT : UInt32 = 5
+
+///|
+pub const OT_EDIT_MOVE_UP : UInt32 = 6
+
+///|
+pub const OT_EDIT_MOVE_DOWN : UInt32 = 7
+
+///|
+pub const OT_EDIT_GOTO_LINE : UInt32 = 8
 
 ///|
 /// OT_EDIT_BUFFER_CURSOR_OFFSET：命令编号 9（见 opentui.h）
@@ -665,6 +715,35 @@ pub const OT_EDIT_HIGHLIGHT_REMOVE_REF : UInt32 = 2
 
 ///|
 pub const OT_EDIT_HIGHLIGHT_CLEAR_ALL : UInt32 = 4
+
+///|
+/// 文本视图选项键（ot_text_buffer_view 不再有 options 调用，保留给 draw_text_view 等场景）
+pub const OT_TEXT_VIEW_WRAP_WIDTH : UInt32 = 0
+
+///|
+pub const OT_TEXT_VIEW_WRAP_MODE : UInt32 = 1
+
+///|
+pub const OT_TEXT_VIEW_FIRST_LINE_OFFSET : UInt32 = 2
+
+///|
+pub const OT_TEXT_VIEW_TAB_INDICATOR : UInt32 = 3
+
+///|
+pub const OT_TEXT_VIEW_TRUNCATE : UInt32 = 4
+
+///|
+pub const OT_TEXT_VIEW_TEXT_ALIGN : UInt32 = 5
+
+///|
+/// 默认样式掩码（ot_edit_buffer_set_defaults / ot_text_buffer_set_defaults）
+pub const OT_EDITOR_STYLE_FOREGROUND : UInt32 = 1
+
+///|
+pub const OT_EDITOR_STYLE_BACKGROUND : UInt32 = 2
+
+///|
+pub const OT_EDITOR_STYLE_ATTRIBUTES : UInt32 = 4
 
 ///|
 /// 终端剪贴板 target（ot_session_clipboard）：0=clipboard

@@ -455,7 +455,7 @@ priv struct EditorViewport {
 }
 
 ///|
-/// C: ot_editor_view_info，sizeof == 36。out 记录。
+/// C: ot_editor_view_info，sizeof == 32（8×u32）。out 记录。
 priv struct EditorViewInfo {
   mut struct_size : UInt32
   mut abi_version : UInt32
@@ -491,7 +491,7 @@ priv struct EditorPosition {
 }
 
 ///|
-/// C: ot_editor_selection，sizeof == 64（按声明顺序；含尾部对齐补齐）。
+/// C: ot_editor_selection，sizeof == 72（14×u32 + 2×u16[4]，无补齐）。
 priv struct EditorSelection {
   struct_size : UInt32
   abi_version : UInt32
@@ -536,4 +536,25 @@ priv struct EditHighlight {
   style_id : UInt32
   priority : UInt32
   ref_ : UInt32
+}
+
+///|
+/// C: ot_text_buffer_info，sizeof == 40（头8 + u64 + 6×u32）。out 记录。
+priv struct TextBufferInfo {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut content_epoch : UInt64
+  mut byte_count : UInt32
+  mut text_length : UInt32
+  mut line_count : UInt32
+  mut highlight_count : UInt32
+  mut tab_width : UInt32
+  mut reserved : UInt32
+}
+
+///|
+/// 独立的 uint16_t[4] 颜色参数（set_tab_color 等）：8 字节尾随无补齐。
+priv struct Rgba16 {
+  c01 : UInt32
+  c23 : UInt32
 }

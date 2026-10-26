@@ -229,7 +229,22 @@ pub fn Renderer::render(self : Renderer) -> Unit raise {
   }
   let outcome = unwrap(commit_frame(self.context, self.session, frame))
   if outcome == OT_RENDER_PENDING || outcome == OT_RENDER_PRESENTED {
-    let _ = drain_stdout(self.context, self.session)
+    // 帧编码可能分批入队（PENDING）：pump 推进 + 反复 drain 直到无输出。
+    // 非终端模式（use_terminal=false）下这一步是唯一能把整帧交付出去的路径。
+    let mut idle = 0
+    while idle < 16 {
+      let clock : Clock = { id: self.clock_id }
+      let p = unwrap(pump(self.context, self.session, clock_now(clock)))
+      let written = unwrap(drain_stdout(self.context, self.session))
+      if written == 0 {
+        idle += 1
+      } else {
+        idle = 0
+      }
+      if p.status() == OT_PUMP_CLOSED {
+        break
+      }
+    }
     return
   }
   raise Failure("frame not accepted: outcome \{outcome}")
@@ -366,6 +381,7 @@ fn next_node(
     SliderNode => OT_SCENE_SLIDER
     CustomNode => OT_SCENE_CUSTOM
     EditorNode => OT_SCENE_EDITOR
+    TextViewNode => OT_SCENE_TEXT_VIEW
   }
   unwrap(create_node(context, session, ot_kind, num~))
 }

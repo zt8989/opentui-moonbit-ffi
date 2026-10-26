@@ -185,3 +185,243 @@ int32_t ot_edit_buffer_highlight_clear(ot_context *context,
   // CLEAR_ALL 同样要求 highlight 为 NULL
   return ot_edit_buffer_highlight(context, buffer, 4 /* CLEAR_ALL */, 0, 0);
 }
+
+// ot_text_buffer_highlight 与 ot_edit_buffer_highlight 同形（标量×4+struct 尾），
+// 按同一套 shim 处理三个常用路径。
+extern int32_t ot_text_buffer_highlight(ot_context *context,
+                                        const ot_handle *buffer,
+                                        uint32_t operation, uint32_t argument,
+                                        const ot_edit_highlight *highlight);
+
+int32_t ot_text_buffer_highlight_add_range(ot_context *context,
+                                           const ot_handle *buffer,
+                                           const ot_edit_highlight *highlight) {
+  return ot_text_buffer_highlight(context, buffer, 1 /* ADD_RANGE */, 0,
+                                  highlight);
+}
+
+int32_t ot_text_buffer_highlight_remove_ref(ot_context *context,
+                                            const ot_handle *buffer,
+                                            uint32_t ref) {
+  return ot_text_buffer_highlight(context, buffer, 2 /* REMOVE_REF */, ref, 0);
+}
+
+int32_t ot_text_buffer_highlight_clear(ot_context *context,
+                                       const ot_handle *buffer) {
+  return ot_text_buffer_highlight(context, buffer, 4 /* CLEAR_ALL */, 0, 0);
+}
+
+// ot_editor_style 内联展开为标量传参，避免（标量×2 + struct + out）混合形态。
+typedef struct ot_editor_style {
+  uint32_t struct_size;
+  uint32_t abi_version;
+  uint32_t flags;
+  uint32_t attributes;
+  uint16_t foreground[4];
+  uint16_t background[4];
+} ot_editor_style;
+
+static void fill_editor_style(ot_editor_style *style, uint32_t flags,
+                              uint32_t attributes, uint32_t fg01, uint32_t fg23,
+                              uint32_t bg01, uint32_t bg23) {
+  style->struct_size = (uint32_t)sizeof(ot_editor_style);
+  style->abi_version = 2;
+  style->flags = flags;
+  style->attributes = attributes;
+  style->foreground[0] = (uint16_t)(fg01 & 0xFFFF);
+  style->foreground[1] = (uint16_t)(fg01 >> 16);
+  style->foreground[2] = (uint16_t)(fg23 & 0xFFFF);
+  style->foreground[3] = (uint16_t)(fg23 >> 16);
+  style->background[0] = (uint16_t)(bg01 & 0xFFFF);
+  style->background[1] = (uint16_t)(bg01 >> 16);
+  style->background[2] = (uint16_t)(bg23 & 0xFFFF);
+  style->background[3] = (uint16_t)(bg23 >> 16);
+}
+
+extern int32_t ot_syntax_style_register(ot_context *context,
+                                        const ot_handle *style,
+                                        const uint8_t *name, uint32_t name_len,
+                                        const ot_editor_style *definition,
+                                        uint32_t *out_id);
+
+int32_t ot_syntax_style_register_packed(
+    ot_context *context, const ot_handle *style, const uint8_t *name,
+    uint32_t name_len, uint32_t flags, uint32_t attributes, uint32_t fg01,
+    uint32_t fg23, uint32_t bg01, uint32_t bg23, uint32_t *out_id) {
+  ot_editor_style definition;
+  fill_editor_style(&definition, flags, attributes, fg01, fg23, bg01, bg23);
+  return ot_syntax_style_register(context, style, name, name_len, &definition,
+                                  out_id);
+}
+
+extern int32_t ot_edit_buffer_set_defaults(ot_context *context,
+                                           const ot_handle *buffer,
+                                           uint32_t mask,
+                                           const ot_editor_style *defaults);
+
+int32_t ot_edit_buffer_set_defaults_packed(ot_context *context,
+                                           const ot_handle *buffer,
+                                           uint32_t mask, uint32_t flags,
+                                           uint32_t attributes, uint32_t fg01,
+                                           uint32_t fg23, uint32_t bg01,
+                                           uint32_t bg23) {
+  if (flags == 0)
+    return ot_edit_buffer_set_defaults(context, buffer, mask, 0);
+  ot_editor_style defaults;
+  fill_editor_style(&defaults, flags, attributes, fg01, fg23, bg01, bg23);
+  return ot_edit_buffer_set_defaults(context, buffer, mask, &defaults);
+}
+
+extern int32_t ot_text_buffer_set_defaults(ot_context *context,
+                                           const ot_handle *buffer,
+                                           uint32_t mask,
+                                           const ot_editor_style *defaults);
+
+int32_t ot_text_buffer_set_defaults_packed(ot_context *context,
+                                           const ot_handle *buffer,
+                                           uint32_t mask, uint32_t flags,
+                                           uint32_t attributes, uint32_t fg01,
+                                           uint32_t fg23, uint32_t bg01,
+                                           uint32_t bg23) {
+  if (flags == 0)
+    return ot_text_buffer_set_defaults(context, buffer, mask, 0);
+  ot_editor_style defaults;
+  fill_editor_style(&defaults, flags, attributes, fg01, fg23, bg01, bg23);
+  return ot_text_buffer_set_defaults(context, buffer, mask, &defaults);
+}
+
+// 占位符：原生要求 chunk 覆盖全部字节（零 chunk = 清除占位符），
+// 简化为纯文本 shim，自动补一个无样式 chunk 覆盖全部字节。
+extern int32_t ot_editor_view_set_placeholder(ot_context *context,
+                                              const ot_handle *view,
+                                              const uint8_t *bytes,
+                                              uint32_t byte_count,
+                                              const void *chunks,
+                                              uint32_t chunk_count);
+
+typedef struct ot_styled_text_chunk {
+  uint32_t struct_size;
+  uint32_t abi_version;
+  uint32_t byte_count;
+  uint32_t flags;
+  uint16_t foreground[4];
+  uint16_t background[4];
+  uint32_t attributes;
+  uint32_t reserved;
+  uint32_t link_offset;
+  uint32_t link_byte_count;
+} ot_styled_text_chunk;
+
+int32_t ot_editor_view_set_placeholder_text(ot_context *context,
+                                            const ot_handle *view,
+                                            const uint8_t *bytes,
+                                            uint32_t byte_count) {
+  if (byte_count == 0)
+    return ot_editor_view_set_placeholder(context, view, 0, 0, 0, 0);
+  ot_styled_text_chunk chunk;
+  memset(&chunk, 0, sizeof(chunk));
+  chunk.struct_size = (uint32_t)sizeof(ot_styled_text_chunk);
+  chunk.abi_version = 2;
+  chunk.byte_count = byte_count;
+  return ot_editor_view_set_placeholder(context, view, bytes, byte_count,
+                                        &chunk, 1);
+}
+
+// get_lines / measure 的 out ot_editor_measure 用字节缓冲回传，
+// 避免（标量×4 + struct 尾）形态；shim 只是把两种 out 合并到一次调用。
+extern int32_t ot_editor_view_measure(ot_context *context, const ot_handle *view,
+                                      uint32_t width, uint32_t height,
+                                      void *out_measure);
+
+int32_t ot_editor_view_measure_shim(ot_context *context, const ot_handle *view,
+                                    uint32_t width, uint32_t height,
+                                    uint32_t *out_pairs) {
+  // out_pairs[0] = line_count, out_pairs[1] = width_cols_max
+  uint32_t measure[4] = {16, 2, 0, 0};
+  int32_t status =
+      ot_editor_view_measure(context, view, width, height, measure);
+  out_pairs[0] = measure[2];
+  out_pairs[1] = measure[3];
+  return status;
+}
+
+typedef struct ot_scene_text_line {
+  uint32_t start_cols;
+  uint32_t width_cols;
+  uint32_t source_line;
+  uint32_t wrap_index;
+} ot_scene_text_line;
+
+typedef struct ot_editor_measure {
+  uint32_t struct_size;
+  uint32_t abi_version;
+  uint32_t line_count;
+  uint32_t width_cols_max;
+} ot_editor_measure;
+
+extern int32_t ot_text_buffer_view_measure(ot_context *context,
+                                           const ot_handle *view,
+                                           uint32_t width, uint32_t height,
+                                           void *out_measure);
+
+int32_t ot_text_buffer_view_measure_shim(ot_context *context,
+                                         const ot_handle *view,
+                                         uint32_t width, uint32_t height,
+                                         uint32_t *out_pairs) {
+  uint32_t measure[4] = {16, 2, 0, 0};
+  int32_t status =
+      ot_text_buffer_view_measure(context, view, width, height, measure);
+  out_pairs[0] = measure[2];
+  out_pairs[1] = measure[3];
+  return status;
+}
+
+typedef struct ot_editor_viewport {
+  uint32_t struct_size;
+  uint32_t abi_version;
+  uint32_t x;
+  uint32_t y;
+  uint32_t width;
+  uint32_t height;
+} ot_editor_viewport;
+
+extern int32_t ot_text_buffer_view_get_lines(ot_context *context,
+                                             const ot_handle *view,
+                                             uint32_t logical,
+                                             uint32_t first_line,
+                                             ot_scene_text_line *lines,
+                                             uint32_t capacity,
+                                             ot_editor_measure *out_info);
+
+int32_t ot_text_buffer_view_get_lines_shim(ot_context *context,
+                                           const ot_handle *view,
+                                           uint32_t logical,
+                                           uint32_t first_line,
+                                           ot_scene_text_line *lines,
+                                           uint32_t capacity,
+                                           uint32_t *out_pairs) {
+  ot_editor_measure measure = {16, 2, 0, 0};
+  int32_t status = ot_text_buffer_view_get_lines(
+      context, view, logical, first_line, lines, capacity, &measure);
+  out_pairs[0] = measure.line_count;
+  out_pairs[1] = measure.width_cols_max;
+  return status;
+}
+
+extern int32_t ot_editor_view_get_lines(ot_context *context,
+                                        const ot_handle *view, uint32_t logical,
+                                        ot_scene_text_line *lines,
+                                        uint32_t capacity,
+                                        ot_editor_measure *out_info);
+
+int32_t ot_editor_view_get_lines_shim(ot_context *context,
+                                      const ot_handle *view, uint32_t logical,
+                                      ot_scene_text_line *lines,
+                                      uint32_t capacity, uint32_t *out_pairs) {
+  ot_editor_measure measure = {16, 2, 0, 0};
+  int32_t status =
+      ot_editor_view_get_lines(context, view, logical, lines, capacity, &measure);
+  out_pairs[0] = measure.line_count;
+  out_pairs[1] = measure.width_cols_max;
+  return status;
+}

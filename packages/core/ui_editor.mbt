@@ -173,6 +173,17 @@ pub fn EditBuffer::get_info(self : EditBuffer) -> EditBufferInfoView raise {
 }
 
 ///|
+/// 缓冲命令（OT_EDIT_BACKSPACE / NEW_LINE / MOVE_LEFT 等）。
+pub fn EditBuffer::command(self : EditBuffer, command~ : UInt32, argument~ : UInt32 = 0) -> Unit raise {
+  rethrow_result(
+    check(
+      "ot_edit_buffer_command",
+      ot_edit_buffer_command(self.context, self.handle, command, argument),
+    ),
+  )
+}
+
+///|
 /// 设置 tab 宽度。
 pub fn EditBuffer::set_tab_width(self : EditBuffer, width~ : UInt32) -> Unit raise {
   rethrow_result(
@@ -429,7 +440,7 @@ pub fn EditorViewInfoView::selection_end(self : EditorViewInfoView) -> Int {
 /// 读取视图信息（follow_cursor=true 跟随光标滚动）。
 pub fn EditorView::get_info(self : EditorView, follow_cursor~ : Bool = false) -> EditorViewInfoView raise {
   let out : EditorViewInfo = {
-    struct_size: 36,
+    struct_size: 32,
     abi_version: OT_CONTEXT_ABI_VERSION,
     virtual_line_count: 0,
     total_virtual_line_count: 0,
@@ -537,7 +548,7 @@ pub fn EditorView::select(
   update_cursor~ : Bool = true,
 ) -> Unit raise {
   let selection : EditorSelection = {
-    struct_size: 64,
+    struct_size: 72,
     abi_version: OT_CONTEXT_ABI_VERSION,
     operation: OT_EDITOR_SELECT_SET,
     behavior: OT_SCENE_TEXT_SELECTION_CELL,
@@ -563,4 +574,369 @@ pub fn EditorView::select(
       ot_editor_view_select_shim(self.context, self.handle, selection, out),
     ),
   )
+}
+
+///|
+/// 设置占位文本（缓冲为空且未选区时显示；纯文本简化版）。
+pub fn EditorView::set_placeholder(self : EditorView, text~ : String) -> Unit raise {
+  let bytes = @utf8.encode(text)
+  rethrow_result(
+    check(
+      "ot_editor_view_set_placeholder",
+      ot_editor_view_set_placeholder_text(
+        self.context,
+        self.handle,
+        bytes,
+        bytes.length().reinterpret_as_uint(),
+      ),
+    ),
+  )
+}
+
+///|
+/// 设置光标垂直滚动边距（视口顶部/底部保留的行数，0.5 步进）。
+pub fn EditorView::set_scroll_margin(self : EditorView, margin~ : Double) -> Unit raise {
+  rethrow_result(
+    check(
+      "ot_editor_view_set_scroll_margin",
+      ot_editor_view_set_scroll_margin(self.context, self.handle, Float::from_double(margin)),
+    ),
+  )
+}
+
+///|
+/// 设置制表符指示颜色。
+pub fn EditorView::set_tab_color(self : EditorView, color~ : String) -> Unit raise {
+  let c = parse_color_lossy(color)
+  rethrow_result(
+    check(
+      "ot_editor_view_set_tab_color",
+      ot_editor_view_set_tab_color(
+        self.context,
+        self.handle,
+        { c01: pack_u16x2(c.0, c.1), c23: pack_u16x2(c.2, c.3) },
+      ),
+    ),
+  )
+}
+
+///|
+/// 读取换行后显示行。logical=false 读视口当前行（先跟随光标），
+/// true 读整个文档。capacity=0 只报数量。
+pub fn EditorView::get_lines(
+  self : EditorView,
+  logical~ : Bool = false,
+  capacity~ : Int = 0,
+) -> LinesResult raise {
+  let cap = if capacity < 0 { 0 } else { capacity }
+  let lines_buf : FixedArray[Byte] = FixedArray::make(if cap > 0 { cap * 16 } else { 1 }, 0)
+  let out_pairs : FixedArray[UInt32] = FixedArray::make(2, 0)
+  rethrow_result(
+    check(
+      "ot_editor_view_get_lines",
+      ot_editor_view_get_lines_shim(
+        self.context,
+        self.handle,
+        if logical { 1 } else { 0 },
+        lines_buf,
+        cap.reinterpret_as_uint(),
+        out_pairs,
+      ),
+    ),
+  )
+  let returned = if cap > 0 { out_pairs[0].reinterpret_as_int() } else { 0 }
+  parse_lines_result(lines_buf, returned, out_pairs[0].reinterpret_as_int(), out_pairs[1].reinterpret_as_int())
+}
+
+///|
+/// 按 width×height 测量换行结果，返回 (line_count, width_cols_max)。
+pub fn EditorView::measure(self : EditorView, width~ : Int, height~ : Int) -> (Int, Int) raise {
+  let out_pairs : FixedArray[UInt32] = FixedArray::make(2, 0)
+  rethrow_result(
+    check(
+      "ot_editor_view_measure",
+      ot_editor_view_measure_shim(
+        self.context,
+        self.handle,
+        width.reinterpret_as_uint(),
+        height.reinterpret_as_uint(),
+        out_pairs,
+      ),
+    ),
+  )
+  (out_pairs[0].reinterpret_as_int(), out_pairs[1].reinterpret_as_int())
+}
+
+///|
+/// 读取当前选区信息（不跟随光标）。
+pub fn EditorView::get_selection(self : EditorView) -> EditorViewInfoView raise {
+  let out : EditorViewInfo = {
+    struct_size: 32,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    virtual_line_count: 0,
+    total_virtual_line_count: 0,
+    selection_present: 0,
+    selection_start: 0,
+    selection_end: 0,
+    selection_occupancy: 0,
+  }
+  rethrow_result(
+    check(
+      "ot_editor_view_get_selection",
+      ot_editor_view_get_selection(self.context, self.handle, out),
+    ),
+  )
+  {
+    visible_lines: out.virtual_line_count.reinterpret_as_int(),
+    selection_present: out.selection_present != 0,
+    selection_start: out.selection_start.reinterpret_as_int(),
+    selection_end: out.selection_end.reinterpret_as_int(),
+  }
+}
+
+///|
+/// 撤销一步，返回交换出的文本片段（通常为空串）。
+pub fn EditBuffer::undo(self : EditBuffer) -> String raise {
+  self.history_step(0)
+}
+
+///|
+/// 重做一步，返回交换出的文本片段。
+pub fn EditBuffer::redo(self : EditBuffer) -> String raise {
+  self.history_step(1)
+}
+
+///|
+fn EditBuffer::history_step(self : EditBuffer, redo : UInt32) -> String raise {
+  let buf : FixedArray[Byte] = FixedArray::make(4096, 0)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  rethrow_result(
+    check(
+      "ot_edit_buffer_history",
+      ot_edit_buffer_history(self.context, self.handle, redo, buf, 4096, out),
+    ),
+  )
+  decode_bytes(buf, out[0].reinterpret_as_int())
+}
+
+///|
+/// 预测量文本的显示宽度（不写入缓冲；tab 展开按缓冲的宽度方法与宽度）。
+pub fn EditBuffer::measure_text(self : EditBuffer, text~ : String) -> Int raise {
+  let bytes = @utf8.encode(text)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  rethrow_result(
+    check(
+      "ot_edit_buffer_measure_text",
+      ot_edit_buffer_measure_text(
+        self.context,
+        self.handle,
+        bytes,
+        bytes.length().reinterpret_as_uint(),
+        out,
+      ),
+    ),
+  )
+  out[0].reinterpret_as_int()
+}
+
+///|
+/// 无缓冲测量（指定宽度方法与 tab 宽度；tab_width=0 用默认 4）。
+pub fn measure_text(
+  renderer : Renderer,
+  text~ : String,
+  width_method~ : UInt32 = OT_WIDTH_METHOD_WCWIDTH,
+  tab_width~ : UInt32 = 0,
+) -> Int raise {
+  let bytes = @utf8.encode(text)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  rethrow_result(
+    check(
+      "ot_edit_measure_text",
+      ot_edit_measure_text(
+        renderer.context,
+        bytes,
+        bytes.length().reinterpret_as_uint(),
+        width_method,
+        tab_width,
+        out,
+      ),
+    ),
+  )
+  out[0].reinterpret_as_int()
+}
+
+///|
+/// 默认样式（未提供项不变；全空 + reset=true 重置）。
+pub fn EditBuffer::set_defaults(
+  self : EditBuffer,
+  fg~ : String = "",
+  bg~ : String = "",
+  attributes~ : UInt32 = 0,
+  reset~ : Bool = false,
+) -> Unit raise {
+  let fg_color : RgbaColor = if fg == "" { (0, 0, 0, 0) } else { parse_color_lossy(fg) }
+  let bg_color : RgbaColor = if bg == "" { (0, 0, 0, 0) } else { parse_color_lossy(bg) }
+  let (fg01, fg23) = pack_rgba(fg_color)
+  let (bg01, bg23) = pack_rgba(bg_color)
+  let mut flags : UInt32 = 0
+  let mut mask : UInt32 = 0
+  if fg != "" {
+    flags = flags.lor(OT_EDITOR_STYLE_FOREGROUND)
+    mask = mask.lor(OT_EDITOR_STYLE_FOREGROUND)
+  }
+  if bg != "" {
+    flags = flags.lor(OT_EDITOR_STYLE_BACKGROUND)
+    mask = mask.lor(OT_EDITOR_STYLE_BACKGROUND)
+  }
+  if attributes != 0 {
+    flags = flags.lor(OT_EDITOR_STYLE_ATTRIBUTES)
+    mask = mask.lor(OT_EDITOR_STYLE_ATTRIBUTES)
+  }
+  if reset {
+    mask = 7
+  }
+  rethrow_result(
+    check(
+      "ot_edit_buffer_set_defaults",
+      ot_edit_buffer_set_defaults_packed(
+        self.context,
+        self.handle,
+        mask,
+        flags,
+        attributes,
+        fg01,
+        fg23,
+        bg01,
+        bg23,
+      ),
+    ),
+  )
+}
+
+///|
+/// 按 display-column offset 区间取文本（by_coords=false）。
+pub fn EditBuffer::get_range(self : EditBuffer, start~ : Int, end~ : Int) -> String raise {
+  self.query_range(0, 0, start, 0, end)
+}
+
+///|
+/// 按行列区间取文本。
+pub fn EditBuffer::get_range_coords(
+  self : EditBuffer,
+  start_row~ : Int,
+  start_col~ : Int,
+  end_row~ : Int,
+  end_col~ : Int,
+) -> String raise {
+  self.query_range(1, start_row, start_col, end_row, end_col)
+}
+
+///|
+fn EditBuffer::query_range(
+  self : EditBuffer,
+  by_coords : UInt32,
+  start_row : Int,
+  start_col : Int,
+  end_row : Int,
+  end_col : Int,
+) -> String raise {
+  let span = if end_col > start_col && end_col - start_col < 16384 {
+    end_col - start_col
+  } else {
+    16384
+  }
+  let buf : FixedArray[Byte] = FixedArray::make(span, 0)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  rethrow_result(
+    check(
+      "ot_edit_buffer_get_range",
+      ot_edit_buffer_get_range(
+        self.context,
+        self.handle,
+        by_coords,
+        start_row.reinterpret_as_uint(),
+        start_col.reinterpret_as_uint(),
+        end_row.reinterpret_as_uint(),
+        end_col.reinterpret_as_uint(),
+        buf,
+        buf.length().reinterpret_as_uint(),
+        out,
+      ),
+    ),
+  )
+  decode_bytes(buf, out[0].reinterpret_as_int())
+}
+
+///|
+/// 一条行内高亮：起止 display-column + 样式 id + ref。
+pub struct HighlightView {
+  start : Int
+  end : Int
+  style_id : UInt32
+  priority : UInt32
+  ref_ : UInt32
+}
+
+///|
+pub fn HighlightView::start(self : HighlightView) -> Int {
+  self.start
+}
+
+///|
+pub fn HighlightView::end(self : HighlightView) -> Int {
+  self.end
+}
+
+///|
+pub fn HighlightView::style_id(self : HighlightView) -> UInt32 {
+  self.style_id
+}
+
+///|
+pub fn HighlightView::ref_(self : HighlightView) -> UInt32 {
+  self.ref_
+}
+
+///|
+/// 读取一行（display column 空间）上的高亮。capacity 默认 64。
+pub fn EditBuffer::get_highlights(self : EditBuffer, line~ : Int, capacity~ : Int = 64) -> Array[HighlightView] raise {
+  let cap = if capacity < 0 { 0 } else { capacity }
+  let buf : FixedArray[Byte] = FixedArray::make(if cap > 0 { cap * 20 } else { 1 }, 0)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  rethrow_result(
+    check(
+      "ot_edit_buffer_get_highlights",
+      ot_edit_buffer_get_highlights(
+        self.context,
+        self.handle,
+        line.reinterpret_as_uint(),
+        buf,
+        cap.reinterpret_as_uint(),
+        out,
+      ),
+    ),
+  )
+  let result : Array[HighlightView] = []
+  let count = out[0].reinterpret_as_int()
+  let mut i = 0
+  while i < count {
+    let base = i * 20
+    let u32_at = fn(off : Int) -> UInt32 {
+      buf[off].to_uint() |
+      (buf[off + 1].to_uint() << 8) |
+      (buf[off + 2].to_uint() << 16) |
+      (buf[off + 3].to_uint() << 24)
+    }
+    result.push(
+      {
+        start: u32_at(base).reinterpret_as_int(),
+        end: u32_at(base + 4).reinterpret_as_int(),
+        style_id: u32_at(base + 8),
+        priority: u32_at(base + 12),
+        ref_: u32_at(base + 16),
+      },
+    )
+    i += 1
+  }
+  result
 }

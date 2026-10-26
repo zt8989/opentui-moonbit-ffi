@@ -602,3 +602,429 @@ extern "C" fn ot_edit_buffer_highlight_clear_shim(
   context : Context,
   buffer : OtHandle,
 ) -> Int32 = "ot_edit_buffer_highlight_clear"
+
+///|
+// 语法样式表：注册采用打包 shim（editor_style 内联为标量）。
+#borrow(context, out_style)
+extern "C" fn ot_syntax_style_create(
+  context : Context,
+  out_style : HandleOut,
+) -> Int32 = "ot_syntax_style_create"
+
+///|
+#borrow(style)
+extern "C" fn ot_syntax_style_destroy(context : Context, style : OtHandle) -> Int32 = "ot_syntax_style_destroy"
+
+///|
+#borrow(context, style, bytes, out_id)
+extern "C" fn ot_syntax_style_register_packed(
+  context : Context,
+  style : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+  flags : UInt32,
+  attributes : UInt32,
+  fg01 : UInt32,
+  fg23 : UInt32,
+  bg01 : UInt32,
+  bg23 : UInt32,
+  out_id : FixedArray[UInt32],
+) -> Int32 = "ot_syntax_style_register_packed"
+
+///|
+#borrow(context, style, bytes, out_id)
+extern "C" fn ot_syntax_style_resolve(
+  context : Context,
+  style : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+  out_id : FixedArray[UInt32],
+) -> Int32 = "ot_syntax_style_resolve"
+
+///|
+#borrow(context, style, out_count)
+extern "C" fn ot_syntax_style_get_count(
+  context : Context,
+  style : OtHandle,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_syntax_style_get_count"
+
+///|
+// 共享文本缓冲（TextBuffer）：与 EditBuffer 同参形态的创建/销毁。
+#borrow(context, options, out_buffer)
+extern "C" fn ot_text_buffer_create(
+  context : Context,
+  options : EditBufferOptions,
+  out_buffer : HandleOut,
+) -> Int32 = "ot_text_buffer_create"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_text_buffer_destroy(context : Context, buffer : OtHandle) -> Int32 = "ot_text_buffer_destroy"
+
+///|
+#borrow(buffer, bytes)
+extern "C" fn ot_text_buffer_set_text(
+  context : Context,
+  buffer : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+) -> Int32 = "ot_text_buffer_set_text"
+
+///|
+#borrow(buffer, bytes)
+extern "C" fn ot_text_buffer_append(
+  context : Context,
+  buffer : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+) -> Int32 = "ot_text_buffer_append"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_text_buffer_clear(
+  context : Context,
+  buffer : OtHandle,
+  reset : UInt32,
+) -> Int32 = "ot_text_buffer_clear"
+
+///|
+#borrow(context, buffer, bytes, chunks, urls)
+extern "C" fn ot_text_buffer_set_styled_text(
+  context : Context,
+  buffer : OtHandle,
+  bytes : FixedArray[Byte],
+  byte_count : UInt32,
+  chunks : FixedArray[Byte],
+  chunk_count : UInt32,
+  urls : FixedArray[Byte],
+  url_byte_count : UInt32,
+) -> Int32 = "ot_text_buffer_set_styled_text"
+
+///|
+#borrow(context, buffer, style)
+extern "C" fn ot_text_buffer_set_syntax_style(
+  context : Context,
+  buffer : OtHandle,
+  style : OtHandle,
+) -> Int32 = "ot_text_buffer_set_syntax_style"
+
+///|
+#borrow(buffer, out_info)
+extern "C" fn ot_text_buffer_get_info(
+  context : Context,
+  buffer : OtHandle,
+  out_info : TextBufferInfo,
+) -> Int32 = "ot_text_buffer_get_info"
+
+///|
+#borrow(buffer, bytes, out_count)
+extern "C" fn ot_text_buffer_get_text(
+  context : Context,
+  buffer : OtHandle,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_text_buffer_get_text"
+
+///|
+#borrow(buffer, bytes, out_count)
+extern "C" fn ot_text_buffer_get_range(
+  context : Context,
+  buffer : OtHandle,
+  start : UInt32,
+  end : UInt32,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_text_buffer_get_range"
+
+///|
+#borrow(context, buffer, mask, flags, attributes, fg01, fg23, bg01, bg23)
+extern "C" fn ot_text_buffer_set_defaults_packed(
+  context : Context,
+  buffer : OtHandle,
+  mask : UInt32,
+  flags : UInt32,
+  attributes : UInt32,
+  fg01 : UInt32,
+  fg23 : UInt32,
+  bg01 : UInt32,
+  bg23 : UInt32,
+) -> Int32 = "ot_text_buffer_set_defaults_packed"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_text_buffer_set_tab_width(
+  context : Context,
+  buffer : OtHandle,
+  width : UInt32,
+) -> Int32 = "ot_text_buffer_set_tab_width"
+
+///|
+// text_buffer_highlight 的三个常用路径（与 edit_buffer 同套 shim）。
+#borrow(buffer, highlight)
+extern "C" fn ot_text_buffer_highlight_add_range_shim(
+  context : Context,
+  buffer : OtHandle,
+  highlight : EditHighlight,
+) -> Int32 = "ot_text_buffer_highlight_add_range"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_text_buffer_highlight_remove_ref_shim(
+  context : Context,
+  buffer : OtHandle,
+  ref_ : UInt32,
+) -> Int32 = "ot_text_buffer_highlight_remove_ref"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_text_buffer_highlight_clear_shim(
+  context : Context,
+  buffer : OtHandle,
+) -> Int32 = "ot_text_buffer_highlight_clear"
+
+///|
+#borrow(buffer, highlights, out_count)
+extern "C" fn ot_text_buffer_get_highlights(
+  context : Context,
+  buffer : OtHandle,
+  line : UInt32,
+  highlights : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_text_buffer_get_highlights"
+
+///|
+#borrow(context, buffer, out_view)
+extern "C" fn ot_text_buffer_view_create(
+  context : Context,
+  buffer : OtHandle,
+  out_view : HandleOut,
+) -> Int32 = "ot_text_buffer_view_create"
+
+///|
+#borrow(view)
+extern "C" fn ot_text_buffer_view_destroy(context : Context, view : OtHandle) -> Int32 = "ot_text_buffer_view_destroy"
+
+///|
+#borrow(view, viewport)
+extern "C" fn ot_text_buffer_view_set_viewport(
+  context : Context,
+  view : OtHandle,
+  viewport : EditorViewport,
+  size_only : UInt32,
+) -> Int32 = "ot_text_buffer_view_set_viewport"
+
+///|
+#borrow(view)
+extern "C" fn ot_text_buffer_view_command(
+  context : Context,
+  view : OtHandle,
+  command : UInt32,
+  argument : UInt32,
+) -> Int32 = "ot_text_buffer_view_command"
+
+///|
+#borrow(view, color)
+extern "C" fn ot_text_buffer_view_set_tab_color(
+  context : Context,
+  view : OtHandle,
+  color : Rgba16,
+) -> Int32 = "ot_text_buffer_view_set_tab_color"
+
+///|
+#borrow(view, selection, out_changed)
+extern "C" fn ot_text_buffer_view_select(
+  context : Context,
+  view : OtHandle,
+  selection : EditorSelection,
+  out_changed : FixedArray[UInt32],
+) -> Int32 = "ot_text_buffer_view_select"
+
+///|
+#borrow(view, out_info)
+extern "C" fn ot_text_buffer_view_get_info(
+  context : Context,
+  view : OtHandle,
+  out_info : EditorViewInfo,
+) -> Int32 = "ot_text_buffer_view_get_info"
+
+///|
+#borrow(view, bytes, out_count)
+extern "C" fn ot_text_buffer_view_get_selected_text(
+  context : Context,
+  view : OtHandle,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_text_buffer_view_get_selected_text"
+
+///|
+// 行列表 + measure 用 shim 合并 out；lines 是连续 ot_scene_text_line 缓冲。
+#borrow(view, lines, out_pairs)
+extern "C" fn ot_text_buffer_view_get_lines_shim(
+  context : Context,
+  view : OtHandle,
+  logical : UInt32,
+  first_line : UInt32,
+  lines : FixedArray[Byte],
+  capacity : UInt32,
+  out_pairs : FixedArray[UInt32],
+) -> Int32 = "ot_text_buffer_view_get_lines_shim"
+
+///|
+#borrow(view, out_pairs)
+extern "C" fn ot_text_buffer_view_measure_shim(
+  context : Context,
+  view : OtHandle,
+  width : UInt32,
+  height : UInt32,
+  out_pairs : FixedArray[UInt32],
+) -> Int32 = "ot_text_buffer_view_measure_shim"
+
+///|
+// TEXT_VIEW 节点绑定与内置绘制开关。
+#borrow(context, node, view)
+extern "C" fn ot_scene_set_text_view(
+  context : Context,
+  node : OtHandle,
+  view : OtHandle,
+) -> Int32 = "ot_scene_set_text_view"
+
+///|
+#borrow(context, node)
+extern "C" fn ot_scene_set_text_view_paint(
+  context : Context,
+  node : OtHandle,
+  enabled : UInt32,
+) -> Int32 = "ot_scene_set_text_view_paint"
+
+///|
+// 编辑器扩展：占位符（纯文本 shim）/滚动边距/制表符颜色/选区信息。
+#borrow(context, view, bytes)
+extern "C" fn ot_editor_view_set_placeholder_text(
+  context : Context,
+  view : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+) -> Int32 = "ot_editor_view_set_placeholder_text"
+
+///|
+#borrow(context, view)
+extern "C" fn ot_editor_view_set_scroll_margin(
+  context : Context,
+  view : OtHandle,
+  margin : Float,
+) -> Int32 = "ot_editor_view_set_scroll_margin"
+
+///|
+#borrow(context, view, color)
+extern "C" fn ot_editor_view_set_tab_color(
+  context : Context,
+  view : OtHandle,
+  color : Rgba16,
+) -> Int32 = "ot_editor_view_set_tab_color"
+
+///|
+#borrow(context, view, lines, out_pairs)
+extern "C" fn ot_editor_view_get_lines_shim(
+  context : Context,
+  view : OtHandle,
+  logical : UInt32,
+  lines : FixedArray[Byte],
+  capacity : UInt32,
+  out_pairs : FixedArray[UInt32],
+) -> Int32 = "ot_editor_view_get_lines_shim"
+
+///|
+#borrow(context, view, out_pairs)
+extern "C" fn ot_editor_view_measure_shim(
+  context : Context,
+  view : OtHandle,
+  width : UInt32,
+  height : UInt32,
+  out_pairs : FixedArray[UInt32],
+) -> Int32 = "ot_editor_view_measure_shim"
+
+///|
+#borrow(context, view, out_info)
+extern "C" fn ot_editor_view_get_selection(
+  context : Context,
+  view : OtHandle,
+  out_info : EditorViewInfo,
+) -> Int32 = "ot_editor_view_get_selection"
+
+///|
+// 撤销/重做：把交换出的文本片段回传（零容量只报字节数）。
+#borrow(context, buffer, bytes, out_count)
+extern "C" fn ot_edit_buffer_history(
+  context : Context,
+  buffer : OtHandle,
+  redo : UInt32,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_edit_buffer_history"
+
+///|
+#borrow(context, buffer, bytes, out_width)
+extern "C" fn ot_edit_buffer_measure_text(
+  context : Context,
+  buffer : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+  out_width : FixedArray[UInt32],
+) -> Int32 = "ot_edit_buffer_measure_text"
+
+///|
+#borrow(context, bytes, out_width)
+extern "C" fn ot_edit_measure_text(
+  context : Context,
+  bytes : Bytes,
+  byte_count : UInt32,
+  width_method : UInt32,
+  tab_width : UInt32,
+  out_width : FixedArray[UInt32],
+) -> Int32 = "ot_edit_measure_text"
+
+///|
+#borrow(context, buffer, mask, flags, attributes, fg01, fg23, bg01, bg23)
+extern "C" fn ot_edit_buffer_set_defaults_packed(
+  context : Context,
+  buffer : OtHandle,
+  mask : UInt32,
+  flags : UInt32,
+  attributes : UInt32,
+  fg01 : UInt32,
+  fg23 : UInt32,
+  bg01 : UInt32,
+  bg23 : UInt32,
+) -> Int32 = "ot_edit_buffer_set_defaults_packed"
+
+///|
+#borrow(buffer, bytes, out_count)
+extern "C" fn ot_edit_buffer_get_range(
+  context : Context,
+  buffer : OtHandle,
+  by_coords : UInt32,
+  start_row : UInt32,
+  start_col : UInt32,
+  end_row : UInt32,
+  end_col : UInt32,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_edit_buffer_get_range"
+
+///|
+#borrow(buffer, highlights, out_count)
+extern "C" fn ot_edit_buffer_get_highlights(
+  context : Context,
+  buffer : OtHandle,
+  line : UInt32,
+  highlights : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_edit_buffer_get_highlights"
