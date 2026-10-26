@@ -4,3 +4,9 @@ import {
   "zt8989/opentui-moonbit-ffi/packages/keymap",
   "moonbitlang/core/encoding/utf8",
 }
+
+// ffi_stub.c：ot_scene_frame_step_with_geometry 的 NULL-previous 包装
+// （同一 C 符号不能绑定多个 extern，见 ffi_stub.c 注释）。
+options(
+  "native-stub": ["ffi_stub.c"],
+)

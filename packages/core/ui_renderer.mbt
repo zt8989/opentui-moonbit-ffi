@@ -20,6 +20,9 @@ pub struct Renderer {
   mut mouse_handler : ((MouseEvent) -> Unit raise)?
   mut focus_handler : ((Bool) -> Unit raise)?
   mut paste_handler : ((String) -> Unit raise)?
+  // FrameBuffer 节点：公开节点号 → 离屏缓冲（RECORD 时供录制流查表）
+  framebuffers : Map[UInt32, FrameBuffer]
+  mut has_hooks : Bool
 }
 
 ///|
@@ -92,6 +95,7 @@ pub fn Renderer::create(
     session,
     handle: root_handle,
     kind: RootNode,
+    num: 1,
     children: [],
     background: (0, 0, 0, 0),
     border_sides: 0,
@@ -128,6 +132,8 @@ pub fn Renderer::create(
     mouse_handler: None,
     focus_handler: None,
     paste_handler: None,
+    framebuffers: Map::new(),
+    has_hooks: false,
   }
   if use_terminal {
     renderer.enable_raw_mode()
@@ -180,21 +186,130 @@ fn paint_with_mouse(
 
 ///|
 /// 渲染一帧并把输出交付到 stdout（对应 renderer 的帧调度）。
+/// 有 FrameBuffer 节点时走 step 循环：原生返回 RECORD 请求，宿主回放
+/// SLOT+DRAW 录制流（RENDER_SELF 用离屏 buffer 替代节点本体绘制），
+/// 直到 DONE 后提交。
 pub fn Renderer::render(self : Renderer) -> Unit raise {
-  let frame = unwrap(
-    paint_with_mouse(
-      self.context,
-      self.session,
-      self.background,
-      self.use_mouse,
-    ),
-  )
+  let frame = if self.has_hooks {
+    self.step_frame()
+  } else {
+    unwrap(
+      paint_with_mouse(
+        self.context,
+        self.session,
+        self.background,
+        self.use_mouse,
+      ),
+    )
+  }
   let outcome = unwrap(commit_frame(self.context, self.session, frame))
   if outcome == OT_RENDER_PENDING || outcome == OT_RENDER_PRESENTED {
     let _ = drain_stdout(self.context, self.session)
     return
   }
   raise Failure("frame not accepted: outcome \{outcome}")
+}
+
+///|
+/// step 循环：驱动带钩子的帧尝试直到 DONE。
+fn Renderer::step_frame(self : Renderer) -> SceneFrameRequest raise {
+  let mut req = unwrap(
+    frame_step(
+      self.context,
+      self.session,
+      background=self.background,
+      use_mouse=self.use_mouse,
+    ),
+  )
+  // 每次尝试最多遇到 slots 上限的 RECORD；max_host_requests 也是 64，这里防死循环
+  let mut rounds = 0
+  while req.kind == OT_SCENE_FRAME_RECORD {
+    rounds = rounds + 1
+    if rounds > 64 {
+      raise Failure("too many RECORD requests in one frame")
+    }
+    let recording = self.build_recording(req.to_request())
+    req = unwrap(
+      frame_step_ack(
+        self.context,
+        self.session,
+        req.to_request(),
+        background=self.background,
+        use_mouse=self.use_mouse,
+        recording~,
+      ),
+    )
+  }
+  req.to_request()
+}
+
+///|
+/// 为 RECORD 请求构建录制流：每个带 RENDER_SELF 钩子且注册了
+/// FrameBuffer 的 slot，回放 SLOT(phase=SELF) + DRAW(buffer)。
+fn Renderer::build_recording(
+  self : Renderer,
+  request : SceneFrameRequest,
+) -> Bytes raise {
+  let slots = unwrap(frame_paint_slots(self.context, self.session, request))
+  let buf : Array[Byte] = []
+  let put32 = fn(v : UInt32) -> Unit {
+    for i in 0..<4 {
+      buf.push(((v >> (i * 8)) & 0xff).reinterpret_as_int().to_byte())
+    }
+  }
+  let put64 = fn(v : UInt64) -> Unit {
+    for i in 0..<8 {
+      let byte = (v >> (i * 8)).to_uint() & 0xff
+      buf.push(byte.reinterpret_as_int().to_byte())
+    }
+  }
+  for i, slot in slots {
+    // ot_scene_paint_slot（152 字节）布局：0-16 句柄，16-24 generation，
+    // 24 num，28 hooks，56 起是 ot_scene_layout paint（left@64 f32，top@68 f32）
+    let u32_at = fn(off : Int32) -> UInt32 {
+      slot[off].to_uint() |
+      (slot[off + 1].to_uint() << 8) |
+      (slot[off + 2].to_uint() << 16) |
+      (slot[off + 3].to_uint() << 24)
+    }
+    let hooks = u32_at(28)
+    if hooks.lor(OT_SCENE_HOOK_RENDER_SELF) != hooks {
+      continue
+    }
+    let num = u32_at(24)
+    match self.framebuffers.get(num) {
+      Some(fb) => {
+        // SLOT 记录：header{size, operation}(8) + slot(4) + phase(4)
+        put32(16)
+        put32(OT_SCENE_RECORD_SLOT)
+        put32(i.reinterpret_as_uint())
+        put32(OT_SCENE_RECORD_PHASE_SELF)
+        // DRAW 记录 = ot_scene_record_draw(32) + ot_buffer_draw_compose(40)：
+        // compose 的 x/y 相对 slot clip 原点，0,0 即绘制在节点自身位置
+        // （对应 TS renderSelf 的 drawFrameBuffer）。
+        put32(72)
+        put32(OT_SCENE_RECORD_DRAW)
+        put64(fb.handle.context_id)
+        put32(fb.handle.slot)
+        put32(fb.handle.generation)
+        put32(0)
+        put32(0)
+        // ot_buffer_draw_compose：header(16) + x/y(8) + src_x/src_y/src_w/src_h(16)
+        put32(40)
+        put32(OT_CONTEXT_ABI_VERSION)
+        put32(OT_BUFFER_DRAW_COMPOSE)
+        put32(0)
+        put32(0)
+        put32(0)
+        put32(0)
+        put32(0)
+        put32(fb.width)
+        put32(fb.height)
+      }
+      None => ()
+    }
+  }
+  Bytes::from_array(FixedArray::from_iter(buf.iter()))
 }
 
 ///|
@@ -224,6 +339,7 @@ fn next_node(
     BoxNode => OT_SCENE_BOX
     TextNode => OT_SCENE_TEXT
     SliderNode => OT_SCENE_SLIDER
+    CustomNode => OT_SCENE_CUSTOM
   }
   unwrap(create_node(context, session, ot_kind, num~))
 }

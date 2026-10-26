@@ -8,6 +8,7 @@ pub enum NodeKind {
   BoxNode
   TextNode
   SliderNode
+  CustomNode
 }
 
 ///|
@@ -26,6 +27,8 @@ pub struct Renderable {
   session : OtHandle
   handle : OtHandle
   kind : NodeKind
+  // 公开节点号（创建时分配；FrameBuffer 查表用）
+  num : UInt32
   children : Array[Renderable]
   // paint 缓存（paint 记录是整体替换，任何绘制属性变更都要全量重建）
   mut background : RgbaColor
@@ -187,6 +190,7 @@ fn new_renderable(
     session,
     handle,
     kind,
+    num,
     children: [],
     background: (0, 0, 0, 0),
     border_sides: 0,
@@ -358,6 +362,13 @@ pub fn new_text(
   align~ : String = "left",
   width~ : String = "auto",
   height~ : String = "auto",
+  position~ : String = "relative",
+  top~ : String = "",
+  left~ : String = "",
+  right~ : String = "",
+  bottom~ : String = "",
+  z_index~ : Int32 = 0,
+  flex_grow~ : Double = 0.0,
 ) -> Renderable raise {
   let options = TextInput::make(
     content~,
@@ -391,6 +402,28 @@ pub fn new_text(
     _ => OT_SCENE_ALIGN_LEFT
   }
   let _ = apply_text(node.context, node)
+  // 布局样式（与 new_box 对齐）：一次 flush
+  let builder = StyleBuilder::new()
+  builder.set_position_type(node.handle, position)
+  if flex_grow != 0.0 {
+    builder.set_flex_grow(node.handle, flex_grow)
+  }
+  if top != "" {
+    builder.set_position(node.handle, "top", Size::parse_lossy(top))
+  }
+  if left != "" {
+    builder.set_position(node.handle, "left", Size::parse_lossy(left))
+  }
+  if right != "" {
+    builder.set_position(node.handle, "right", Size::parse_lossy(right))
+  }
+  if bottom != "" {
+    builder.set_position(node.handle, "bottom", Size::parse_lossy(bottom))
+  }
+  if z_index != 0 {
+    node.set_z_index_internal(z_index)
+  }
+  let _ = flush_styles_of(node.context, builder)
   node
 }
 

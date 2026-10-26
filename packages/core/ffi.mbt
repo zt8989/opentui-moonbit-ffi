@@ -259,3 +259,72 @@ extern "C" fn ot_context_get_link_url(
   capacity : UInt32,
   out_count : FixedArray[UInt32],
 ) -> Int32 = "ot_context_get_link_url"
+
+///|
+#borrow(context, options, out_buffer)
+extern "C" fn ot_buffer_create(
+  context : Context,
+  options : BufferOptions,
+  out_buffer : HandleOut,
+) -> Int32 = "ot_buffer_create"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_buffer_destroy(context : Context, buffer : OtHandle) -> Int32 = "ot_buffer_destroy"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_buffer_resize(
+  context : Context,
+  buffer : OtHandle,
+  width : UInt32,
+  height : UInt32,
+) -> Int32 = "ot_buffer_resize"
+
+///|
+
+///|
+#borrow(context, node, hooks)
+extern "C" fn ot_scene_set_hooks(
+  context : Context,
+  node : OtHandle,
+  hooks : SceneHooks,
+) -> Int32 = "ot_scene_set_hooks"
+
+///|
+// previous 为 UInt64：0 = 开始新尝试；非 0 路径用同符号的 *_ack 变体。
+#borrow(context, session, options, recording, out_request, out_geometry)
+extern "C" fn ot_scene_frame_step(
+  context : Context,
+  session : OtHandle,
+  options : SceneFrameOptions,
+  recording : Bytes,
+  recording_length : UInt32,
+  out_request : FrameRequestOut,
+  out_geometry : FixedArray[Byte],
+) -> Int32 = "ot_scene_frame_step_begin"
+
+///|
+// previous 非 NULL：确认上一次返回的请求（含全部身份与尺寸）。
+#borrow(context, session, previous, options, recording, out_request, out_geometry)
+extern "C" fn ot_scene_frame_step_ack(
+  context : Context,
+  session : OtHandle,
+  previous : SceneFrameRequest,
+  options : SceneFrameOptions,
+  recording : Bytes,
+  recording_length : UInt32,
+  out_request : FrameRequestOut,
+  out_geometry : FixedArray[Byte],
+) -> Int32 = "ot_scene_frame_step_confirm"
+
+///|
+#borrow(context, session, record_request, out_slots, out_count)
+extern "C" fn ot_scene_frame_get_paint_slots(
+  context : Context,
+  session : OtHandle,
+  record_request : SceneFrameRequest,
+  out_slots : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_scene_frame_get_paint_slots"

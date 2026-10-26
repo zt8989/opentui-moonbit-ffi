@@ -279,3 +279,105 @@ priv struct ControlOptions {
   argument : UInt32
   reserved : UInt32
 }
+
+///|
+/// C: ot_buffer_options，sizeof == 24。width_method 取 OT_WIDTH_METHOD_*，
+/// flags 仅 OT_BUFFER_RESPECT_ALPHA。width*height 受 render_cells_max 约束。
+priv struct BufferOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  width : UInt32
+  height : UInt32
+  width_method : UInt32
+  flags : UInt32
+}
+
+///|
+/// C: ot_scene_hooks，sizeof == 40。generation 非 0 且变更时必须递增；
+/// initial_* 仅在首次布局前生效。
+priv struct SceneHooks {
+  struct_size : UInt32
+  abi_version : UInt32
+  flags : UInt32
+  reserved : UInt32
+  generation : UInt64
+  initial_width : Double
+  initial_height : Double
+}
+
+///|
+/// C: ot_scene_frame_options，sizeof == 36（全 4 字节对齐成员，无尾部补齐）。
+priv struct SceneFrameOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  background01 : UInt32
+  background23 : UInt32
+  use_mouse : UInt32
+  excluded_hit_num : UInt32
+  max_layout_rounds : UInt32
+  max_host_requests : UInt32
+  preserve_unwritten : UInt32
+}
+
+// ot_buffer_draw_* 记录（见下）。注意：MoonBit 嵌套 struct 字段按指针
+// 展开，必须扁平化声明（布局规则见文件头注释）。
+
+///|
+/// C: ot_buffer_draw_clear，sizeof == 24。前 4 字段是 ot_buffer_draw_header
+/// （struct_size 是完整记录大小；flags 仅 TEXT 用 HAS_BACKGROUND）。
+priv struct BufferDrawClear {
+  struct_size : UInt32
+  abi_version : UInt32
+  operation : UInt32
+  flags : UInt32
+  background01 : UInt32
+  background23 : UInt32
+}
+
+///|
+/// C: ot_buffer_draw_fill，sizeof == 40。
+priv struct BufferDrawFill {
+  struct_size : UInt32
+  abi_version : UInt32
+  operation : UInt32
+  flags : UInt32
+  x : Int32
+  y : Int32
+  width : UInt32
+  height : UInt32
+  background01 : UInt32
+  background23 : UInt32
+}
+
+///|
+/// C: ot_buffer_draw_text_record，sizeof == 44。
+priv struct BufferDrawTextRecord {
+  struct_size : UInt32
+  abi_version : UInt32
+  operation : UInt32
+  flags : UInt32
+  x : Int32
+  y : Int32
+  attributes : UInt32
+  foreground01 : UInt32
+  foreground23 : UInt32
+  background01 : UInt32
+  background23 : UInt32
+}
+
+///|
+/// C: ot_buffer_draw_cell，sizeof == 48。
+priv struct BufferDrawCell {
+  struct_size : UInt32
+  abi_version : UInt32
+  operation : UInt32
+  flags : UInt32
+  x : Int32
+  y : Int32
+  character : UInt32
+  attributes : UInt32
+  foreground01 : UInt32
+  foreground23 : UInt32
+  background01 : UInt32
+  background23 : UInt32
+}

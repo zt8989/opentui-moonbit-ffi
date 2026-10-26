@@ -1042,3 +1042,389 @@ pub fn link_url(
     Err(e) => Err(e)
   }
 }
+
+///|
+/// 创建离屏 buffer（owned，独立于 Session）。
+pub fn create_buffer(
+  context : Context,
+  width~ : UInt32,
+  height~ : UInt32,
+  respect_alpha~ : Bool = false,
+) -> Result[OtHandle, NativeError] {
+  let out : HandleOut = { context_id: 0, slot: 0, generation: 0, }
+  let options : BufferOptions = {
+    struct_size: 24,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    width,
+    height,
+    width_method: OT_WIDTH_METHOD_WCWIDTH,
+    flags: if respect_alpha {
+      OT_BUFFER_RESPECT_ALPHA
+    } else {
+      0
+    },
+  }
+  let status = ot_buffer_create(context, options, out)
+  match check("ot_buffer_create", status) {
+    Ok(_) => Ok(out.to_handle())
+    Err(e) => Err(e)
+  }
+}
+
+///|
+pub fn destroy_buffer(
+  context : Context,
+  buffer : OtHandle,
+) -> Result[Unit, NativeError] {
+  check("ot_buffer_destroy", ot_buffer_destroy(context, buffer))
+}
+
+// ot_buffer_draw 的记录类型多变体受同一 C 符号限制，且 Bytes 传参经
+// 验证与原生期待不符；每种操作经 ffi_stub.c 的 shim，MoonBit struct
+// 直接传参（布局与 C 一致），frame=NULL（owned buffer）、source=NULL。
+
+///|
+#borrow(context, target, record)
+extern "C" fn ot_buffer_draw_clear_op(
+  context : Context,
+  target : OtHandle,
+  record : BufferDrawClear,
+) -> Int32 = "ot_buffer_draw_clear_shim"
+
+///|
+#borrow(context, target, record)
+extern "C" fn ot_buffer_draw_fill_op(
+  context : Context,
+  target : OtHandle,
+  record : BufferDrawFill,
+) -> Int32 = "ot_buffer_draw_fill_shim"
+
+///|
+#borrow(context, target, record, text)
+extern "C" fn ot_buffer_draw_text_op(
+  context : Context,
+  target : OtHandle,
+  record : BufferDrawTextRecord,
+  text : Bytes,
+  text_len : UInt32,
+) -> Int32 = "ot_buffer_draw_text_shim"
+
+///|
+#borrow(context, target, record)
+extern "C" fn ot_buffer_draw_cell_op(
+  context : Context,
+  target : OtHandle,
+  record : BufferDrawCell,
+) -> Int32 = "ot_buffer_draw_cell_shim"
+
+///|
+///|
+/// 清屏（CLEAR：填空格、白前景、给定背景）。
+pub fn buffer_clear(
+  context : Context,
+  buffer : OtHandle,
+  background~ : RgbaColor,
+) -> Result[Unit, NativeError] {
+  let bg = pack_rgba(background)
+  let record : BufferDrawClear = {
+    struct_size: 24,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    operation: OT_BUFFER_DRAW_CLEAR,
+    flags: 0,
+    background01: bg.0,
+    background23: bg.1,
+  }
+  check("ot_buffer_draw(CLEAR)", ot_buffer_draw_clear_op(context, buffer, record))
+}
+
+///|
+/// 填充矩形（FILL，裁剪到目标内）。
+pub fn buffer_fill(
+  context : Context,
+  buffer : OtHandle,
+  x~ : Int32,
+  y~ : Int32,
+  width~ : UInt32,
+  height~ : UInt32,
+  background~ : RgbaColor,
+) -> Result[Unit, NativeError] {
+  let bg = pack_rgba(background)
+  let record : BufferDrawFill = {
+    struct_size: 40,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    operation: OT_BUFFER_DRAW_FILL,
+    flags: 0,
+    x,
+    y,
+    width,
+    height,
+    background01: bg.0,
+    background23: bg.1,
+  }
+  check("ot_buffer_draw(FILL)", ot_buffer_draw_fill_op(context, buffer, record))
+}
+
+///|
+/// 绘制文本（TEXT；background 为 None 时不用 HAS_BACKGROUND，各字形保留目标背景）。
+pub fn buffer_draw_text(
+  context : Context,
+  buffer : OtHandle,
+  text~ : String,
+  x~ : Int32,
+  y~ : Int32,
+  foreground~ : RgbaColor,
+  background~ : RgbaColor? = None,
+  attributes~ : UInt32 = 0,
+) -> Result[Unit, NativeError] {
+  let fg = pack_rgba(foreground)
+  let (flags, bg) = match background {
+    Some(c) => {
+      let packed = pack_rgba(c)
+      (OT_BUFFER_DRAW_HAS_BACKGROUND, packed)
+    }
+    None => (0, (0, 0))
+  }
+  let record : BufferDrawTextRecord = {
+    struct_size: 44,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    operation: OT_BUFFER_DRAW_TEXT,
+    flags,
+    x,
+    y,
+    attributes,
+    foreground01: fg.0,
+    foreground23: fg.1,
+    background01: bg.0,
+    background23: bg.1,
+  }
+  let bytes = @utf8.encode(text)
+  check(
+    "ot_buffer_draw(TEXT)",
+    ot_buffer_draw_text_op(
+      context,
+      buffer,
+      record,
+      bytes,
+      bytes.length().reinterpret_as_uint(),
+    ),
+  )
+}
+
+///|
+/// 写单个单元格（CELL；控制字符写空格）。
+pub fn buffer_draw_cell(
+  context : Context,
+  buffer : OtHandle,
+  x~ : Int32,
+  y~ : Int32,
+  character~ : UInt32,
+  foreground~ : RgbaColor,
+  background~ : RgbaColor,
+  attributes~ : UInt32 = 0,
+) -> Result[Unit, NativeError] {
+  let fg = pack_rgba(foreground)
+  let bg = pack_rgba(background)
+  let record : BufferDrawCell = {
+    struct_size: 48,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    operation: OT_BUFFER_DRAW_CELL,
+    flags: 0,
+    x,
+    y,
+    character,
+    attributes,
+    foreground01: fg.0,
+    foreground23: fg.1,
+    background01: bg.0,
+    background23: bg.1,
+  }
+  check("ot_buffer_draw(CELL)", ot_buffer_draw_cell_op(context, buffer, record))
+}
+
+///|
+pub fn set_hooks(
+  context : Context,
+  node : OtHandle,
+  flags~ : UInt32,
+  generation~ : UInt64,
+  initial_width~ : Double = 0.0,
+  initial_height~ : Double = 0.0,
+) -> Result[Unit, NativeError] {
+  let hooks : SceneHooks = {
+    struct_size: 40,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    flags,
+    reserved: 0,
+    generation,
+    initial_width,
+    initial_height,
+  }
+  check("ot_scene_set_hooks", ot_scene_set_hooks(context, node, hooks))
+}
+
+///|
+/// ot_scene_frame_options，struct_size/abi_version 已填好。
+fn make_frame_options(
+  background~ : RgbaColor,
+  use_mouse~ : Bool,
+  excluded_hit_num~ : UInt32 = 0,
+) -> SceneFrameOptions {
+  let bg = pack_rgba(background)
+  {
+    // sizeof(ot_scene_frame_options) == 36：成员对齐 4，无尾部补齐
+    struct_size: 36,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    background01: bg.0,
+    background23: bg.1,
+    use_mouse: if use_mouse {
+      1
+    } else {
+      0
+    },
+    excluded_hit_num,
+    max_layout_rounds: 64,
+    max_host_requests: 64,
+    preserve_unwritten: 0,
+  }
+}
+
+///|
+/// geometry out 缓冲：112 字节，前 8 字节是版本化记录头（struct_size/abi）。
+/// 内容（两个 ot_scene_layout）本实现不读取。
+fn frame_geometry_out() -> FixedArray[Byte] {
+  let buf : FixedArray[Byte] = FixedArray::make(112, 0)
+  let put32 = fn(off : Int32, v : UInt32) -> Unit {
+    for i in 0..<4 {
+      buf[off + i] = ((v >> (i * 8)) & 0xff).reinterpret_as_int().to_byte()
+    }
+  }
+  // 外层 geometry 头 + 两个内嵌 ot_scene_layout 的版本化记录头
+  put32(0, 112)
+  put32(4, OT_CONTEXT_ABI_VERSION)
+  put32(16, 48)
+  put32(20, OT_CONTEXT_ABI_VERSION)
+  put32(64, 48)
+  put32(68, OT_CONTEXT_ABI_VERSION)
+  buf
+}
+
+///|
+/// 开始一次帧尝试（previous = NULL）。返回的请求 kind：
+/// OT_SCENE_FRAME_RECORD 需要宿主录制后用 frame_step_ack 确认；
+/// OT_SCENE_FRAME_DONE（0）表示尝试完成，可提交。
+pub fn frame_step(
+  context : Context,
+  session : OtHandle,
+  background~ : RgbaColor,
+  use_mouse~ : Bool,
+) -> Result[FrameRequestOut, NativeError] {
+  let out : FrameRequestOut = FrameRequestOut::empty()
+  let geo = frame_geometry_out()
+  let status = ot_scene_frame_step(
+    context,
+    session,
+    make_frame_options(background~, use_mouse~),
+    b"",
+    0,
+    out,
+    geo,
+  )
+  match check("ot_scene_frame_step", status) {
+    Ok(_) => Ok(out)
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 确认上一次的请求并继续帧尝试。recording 为空时继续等下一个 RECORD/DONE。
+pub fn frame_step_ack(
+  context : Context,
+  session : OtHandle,
+  previous : SceneFrameRequest,
+  background~ : RgbaColor,
+  use_mouse~ : Bool,
+  recording~ : Bytes,
+) -> Result[FrameRequestOut, NativeError] {
+  let out : FrameRequestOut = FrameRequestOut::empty()
+  let geo = frame_geometry_out()
+  let status = ot_scene_frame_step_ack(
+    context,
+    session,
+    previous,
+    make_frame_options(background~, use_mouse~),
+    recording,
+    recording.length().reinterpret_as_uint(),
+    out,
+    geo,
+  )
+  match check("ot_scene_frame_step_ack", status) {
+    Ok(_) => Ok(out)
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 一次帧尝试的录制上限：slots 数少（FrameBuffer 节点数），64 足够。
+const PAINT_SLOT_BYTES : Int32 = 160
+
+///|
+/// 读取 RECORD 请求的全部 slots。返回按绘制顺序的字节记录数组，
+/// 每条 160 字节（ot_scene_paint_slot，152 字节补齐到 8 的倍数）。
+pub fn frame_paint_slots(
+  context : Context,
+  session : OtHandle,
+  record_request : SceneFrameRequest,
+) -> Result[Array[FixedArray[Byte]], NativeError] {
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  // 先取 slot 总数
+  let status = ot_scene_frame_get_paint_slots(
+    context,
+    session,
+    record_request,
+    FixedArray::make(8, 0),
+    0,
+    out,
+  )
+  match check("ot_scene_frame_get_paint_slots", status) {
+    Err(e) => Err(e)
+    Ok(_) => {
+      let total = out[0].reinterpret_as_int()
+      let slots : Array[FixedArray[Byte]] = []
+      if total > 0 {
+        let cap = if total > 64 { 64 } else { total }
+        let buf : FixedArray[Byte] = FixedArray::make(cap * PAINT_SLOT_BYTES, 0)
+        let status2 = ot_scene_frame_get_paint_slots(
+          context,
+          session,
+          record_request,
+          buf,
+          cap.reinterpret_as_uint(),
+          out,
+        )
+        match check("ot_scene_frame_get_paint_slots", status2) {
+          Err(e) => return Err(e)
+          Ok(_) =>
+            for i in 0..<out[0].reinterpret_as_int() {
+              let one : FixedArray[Byte] = FixedArray::make(PAINT_SLOT_BYTES, 0)
+              for j in 0..<PAINT_SLOT_BYTES {
+                one[j] = buf[i * PAINT_SLOT_BYTES + j]
+              }
+              slots.push(one)
+            }
+        }
+      }
+      Ok(slots)
+    }
+  }
+}
+
+///|
+/// 调整离屏 buffer 尺寸。
+pub fn buffer_resize(
+  context : Context,
+  buffer : OtHandle,
+  width~ : UInt32,
+  height~ : UInt32,
+) -> Result[Unit, NativeError] {
+  check("ot_buffer_resize", ot_buffer_resize(context, buffer, width, height))
+}

@@ -514,3 +514,62 @@ pub const OT_PROGRAM_KIND_AUTH : UInt32 = 3
 pub const OT_PROGRAM_STATUS_PROGRESS : UInt32 = 1
 
 ///|
+/// 场景节点类型：custom（宿主绘制钩子节点，FrameBuffer 等）
+pub const OT_SCENE_CUSTOM : UInt32 = 6
+
+///|
+/// 场景钩子位（ot_scene_set_hooks.flags）：
+pub const OT_SCENE_HOOK_RENDER_BEFORE : UInt32 = 8
+
+///|
+pub const OT_SCENE_HOOK_RENDER_AFTER : UInt32 = 16
+
+///|
+pub const OT_SCENE_HOOK_RENDER_SELF : UInt32 = 32
+
+///|
+/// 帧请求 kind 注释：DONE=0（可提交）/ UPDATE=1 / RESIZE=2 / LAYOUT_CHANGED=3 / RECORD=4（宿主录制；DONE 已在上方定义）
+/// 录制流记录类型（ot_scene_record_header.operation）
+pub const OT_SCENE_RECORD_SLOT : UInt32 = 0
+
+///|
+pub const OT_SCENE_RECORD_DRAW : UInt32 = 1
+
+///|
+/// 录制流 phase：BEFORE=0 / SELF=1 / AFTER=2
+pub const OT_SCENE_RECORD_PHASE_BEFORE : UInt32 = 0
+
+///|
+pub const OT_SCENE_RECORD_PHASE_SELF : UInt32 = 1
+
+///|
+pub const OT_SCENE_RECORD_PHASE_AFTER : UInt32 = 2
+
+///|
+/// buffer 绘制操作（ot_buffer_draw_header.operation）
+pub const OT_BUFFER_DRAW_CLEAR : UInt32 = 0
+
+///|
+pub const OT_BUFFER_DRAW_FILL : UInt32 = 1
+
+///|
+pub const OT_BUFFER_DRAW_TEXT : UInt32 = 2
+
+///|
+pub const OT_BUFFER_DRAW_CELL : UInt32 = 3
+
+///|
+pub const OT_BUFFER_DRAW_COMPOSE : UInt32 = 7
+
+///|
+/// buffer 绘制 flags：TEXT 带 background
+pub const OT_BUFFER_DRAW_HAS_BACKGROUND : UInt32 = 1
+
+///|
+pub const OT_BUFFER_RESPECT_ALPHA : UInt32 = 1
+
+///|
+/// 宽度测量方法（ot_buffer_options.width_method）
+pub const OT_WIDTH_METHOD_WCWIDTH : UInt32 = 0
+
+///|

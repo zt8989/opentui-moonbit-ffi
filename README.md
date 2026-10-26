@@ -36,6 +36,7 @@
 │   │   ├── ui_node.mbt         # TS 兼容层：Renderable/Box/Text（new_box/new_text）
 │   │   ├── ui_renderer.mbt     # TS 兼容层：Renderer（create/root/add/render/on_key/run）
 │   │   ├── ui_extra.mbt        # TS 兼容层：styled text chunks、slider、鼠标与命中测试
+│   │   ├── ui_buffer.mbt       # TS 兼容层：FrameBuffer（CUSTOM 节点 + RENDER_SELF 钩子 + step 循环）
 │   │   ├── ui_terminal.mbt     # 终端 raw mode、stdin、输入事件→KeyStroke
 │   │   └── ffi_test.mbt        # 纯 MoonBit 侧单元测试
 │   ├── keymap/                 # @opentui/keymap 核心的 MoonBit 移植
@@ -62,7 +63,9 @@
 │       ├── notification-demo/  # 终端通知（1-6 键触发）
 │       ├── focus-restore-demo/ # 鼠标全移动 + 焦点事件计数
 │       ├── link-demo/          # 富文本超链接 + 点击解析 URL
-│       └── keypress-debug-demo/ # 按键/粘贴事件日志与详情
+│       ├── keypress-debug-demo/ # 按键/粘贴事件日志与详情
+│       ├── wide-grapheme-overlay/ # 宽字符背景 + 可拖动半透明色块（FrameBuffer）
+│       └── full-unicode/       # grapheme 窗口/富文本混排（FrameBuffer + 键盘移动）
 ├── scripts/fetch-opentui.sh    # 克隆并构建 OpenTUI 原生库
 └── vendor/dist/<target>/       # opentui.h + libopentui（git 忽略，脚本生成）
 ```
