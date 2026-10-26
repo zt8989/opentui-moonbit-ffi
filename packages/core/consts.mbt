@@ -411,3 +411,53 @@ pub const OT_DISPLAY_NONE : UInt32 = 1
 ///|
 /// ENUM 组 kind：display
 pub const OT_STYLE_ENUM_DISPLAY : UInt32 = 9
+
+///|
+/// styled text chunk 的 flags
+pub const OT_SCENE_TEXT_FOREGROUND : UInt32 = 1
+
+///|
+pub const OT_SCENE_TEXT_BACKGROUND : UInt32 = 2
+
+///|
+pub const OT_SCENE_TEXT_LINK : UInt32 = 4
+
+///|
+/// slider orientation：0=horizontal，1=vertical（>1 拒绝）
+pub const OT_SLIDER_ORIENTATION_HORIZONTAL : UInt32 = 0
+
+///|
+pub const OT_SLIDER_ORIENTATION_VERTICAL : UInt32 = 1
+
+///|
+/// 鼠标事件 action
+pub const OT_INPUT_MOUSE_DOWN : UInt32 = 1
+
+///|
+pub const OT_INPUT_MOUSE_UP : UInt32 = 2
+
+///|
+pub const OT_INPUT_MOUSE_MOVE : UInt32 = 3
+
+///|
+pub const OT_INPUT_MOUSE_DRAG : UInt32 = 4
+
+///|
+pub const OT_INPUT_MOUSE_SCROLL : UInt32 = 5
+
+///|
+/// 鼠标按键（ot_input_event.code）
+pub const OT_INPUT_MOUSE_BUTTON_NONE : UInt32 = 255
+
+///|
+/// 场景节点类型：slider
+pub const OT_SCENE_SLIDER : UInt32 = 3
+
+///|
+/// 输入事件 kind：KEY=1 / MOUSE=2 / PASTE=3 / FOCUS=4 / REPLY=5
+pub const OT_INPUT_MOUSE : UInt32 = 2
+
+///|
+pub const OT_INPUT_PASTE : UInt32 = 3
+
+///|

@@ -7,6 +7,7 @@ pub enum NodeKind {
   RootNode
   BoxNode
   TextNode
+  SliderNode
 }
 
 ///|
@@ -65,6 +66,7 @@ pub struct BoxOptions {
   gap : Int32
   flex_grow : Double
   flex_shrink : Double
+  overflow : String
   position : String
   top : String
   left : String
@@ -92,6 +94,7 @@ pub fn BoxOptions::make(
   gap~ : Int32 = 0,
   flex_grow~ : Double = 0.0,
   flex_shrink~ : Double = 1.0,
+  overflow~ : String = "visible",
   position~ : String = "relative",
   top~ : String = "",
   left~ : String = "",
@@ -116,6 +119,7 @@ pub fn BoxOptions::make(
     gap,
     flex_grow,
     flex_shrink,
+    overflow,
     position,
     top,
     left,
@@ -249,6 +253,7 @@ pub fn new_box(
   gap~ : Int32 = 0,
   flex_grow~ : Double = 0.0,
   flex_shrink~ : Double = 1.0,
+  overflow~ : String = "visible",
   position~ : String = "relative",
   top~ : String = "",
   left~ : String = "",
@@ -273,6 +278,7 @@ pub fn new_box(
     gap~,
     flex_grow~,
     flex_shrink~,
+    overflow~,
     position~,
     top~,
     left~,
@@ -317,6 +323,7 @@ pub fn new_box(
   }
   builder.set_flex_grow(node.handle, options.flex_grow)
   builder.set_flex_shrink(node.handle, options.flex_shrink)
+  builder.set_overflow(node.handle, options.overflow)
   if options.top != "" {
     builder.set_position(node.handle, "top", Size::parse_lossy(options.top))
   }
@@ -349,6 +356,8 @@ pub fn new_text(
   wrap_mode~ : String = "none",
   truncate~ : Bool = false,
   align~ : String = "left",
+  width~ : String = "auto",
+  height~ : String = "auto",
 ) -> Renderable raise {
   let options = TextInput::make(
     content~,
@@ -366,6 +375,10 @@ pub fn new_text(
     num=renderer.take_node_number(),
     paint=empty_paint(),
   )
+  let size_builder = StyleBuilder::new()
+  size_builder.set_width(node.handle, Size::parse_lossy(width))
+  size_builder.set_height(node.handle, Size::parse_lossy(height))
+  let _ = flush_styles_of(renderer.context, size_builder)
   node.content = options.content
   node.fg = parse_color_lossy(options.fg)
   node.text_bg = parse_color_lossy(options.bg)
@@ -619,4 +632,14 @@ fn Renderable::build_text_options(self : Renderable) -> SceneTextOptions {
     tab_color23: 0,
     text_align: self.text_align,
   }
+}
+
+///|
+/// 文本滚动偏移（显示单元格；对应 TS textNode.scrollTo）。
+pub fn Renderable::set_scroll(
+  self : Renderable,
+  x : Double,
+  y : Double,
+) -> Unit raise {
+  rethrow(set_text_scroll_direct(self.context, self.handle, x, y))
 }

@@ -404,14 +404,27 @@ pub fn set_text(
 
 ///|
 /// 布局并绘制场景，返回待提交的帧票据（DONE 草稿）。
+/// use_mouse=true 时发布本帧命中列表（供 hit_test 查询）。
 pub fn paint(
   context : Context,
   session : OtHandle,
   background~ : RgbaColor = rgba_black_opaque(),
+  use_mouse~ : Bool = false,
 ) -> Result[SceneFrameRequest, NativeError] {
   let bg = rgba_array(background)
   let out : FrameRequestOut = FrameRequestOut::empty()
-  let status = ot_scene_paint(context, session, bg, 0, 0, out)
+  let status = ot_scene_paint(
+    context,
+    session,
+    bg,
+    if use_mouse {
+      1
+    } else {
+      0
+    },
+    0,
+    out,
+  )
   match check("ot_scene_paint", status) {
     Ok(_) => Ok(out.to_request())
     Err(e) => Err(e)
@@ -771,4 +784,44 @@ pub fn set_text_options(
     "ot_scene_set_text_options",
     ot_scene_set_text_options(context, node, options),
   )
+}
+
+///|
+pub fn InputEvent::x(self : InputEvent) -> UInt32 {
+  self.x
+}
+
+///|
+pub fn InputEvent::y(self : InputEvent) -> UInt32 {
+  self.y
+}
+
+///|
+/// 直接提交文本滚动偏移（text options 是整体替换记录）。
+pub fn set_text_scroll_direct(
+  context : Context,
+  node : OtHandle,
+  x : Double,
+  y : Double,
+) -> Result[Unit, NativeError] {
+  let options : SceneTextOptions = {
+    struct_size: 80,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    foreground01: 0,
+    foreground23: 0,
+    background01: 0,
+    background23: 0,
+    attributes: 0,
+    wrap_mode: 0,
+    truncate: 0,
+    first_line_offset: 0,
+    scroll_x: x,
+    scroll_y: y,
+    tab_indicator: 0,
+    tab_color_set: 0,
+    tab_color01: 0,
+    tab_color23: 0,
+    text_align: 0,
+  }
+  set_text_options(context, node, options)
 }

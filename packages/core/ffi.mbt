@@ -184,3 +184,34 @@ extern "C" fn ot_scene_flush(
   byte_count : UInt32,
   out_applied : FixedArray[UInt32],
 ) -> Int32 = "ot_scene_flush"
+
+///|
+#borrow(context, node, bytes, chunks, urls)
+extern "C" fn ot_scene_set_styled_text(
+  context : Context,
+  node : OtHandle,
+  bytes : FixedArray[Byte],
+  byte_count : UInt32,
+  chunks : FixedArray[Byte],
+  chunk_count : UInt32,
+  urls : FixedArray[Byte],
+  url_byte_count : UInt32,
+) -> Int32 = "ot_scene_set_styled_text"
+
+///|
+#borrow(context, node, options)
+extern "C" fn ot_scene_set_slider(
+  context : Context,
+  node : OtHandle,
+  options : SliderOptions,
+) -> Int32 = "ot_scene_set_slider"
+
+///|
+#borrow(context, session, out_num)
+extern "C" fn ot_scene_hit_test(
+  context : Context,
+  session : OtHandle,
+  x : Int32,
+  y : Int32,
+  out_num : FixedArray[UInt32],
+) -> Int32 = "ot_scene_hit_test"

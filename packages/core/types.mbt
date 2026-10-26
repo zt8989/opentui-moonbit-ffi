@@ -242,3 +242,29 @@ priv struct PumpResultOut {
   mut reserved : UInt32
   mut deadline_ns : UInt64
 }
+
+///|
+/// ot_styled_text_chunk（48 字节）由 ui_extra.mbt 的 set_styled_chunks
+/// 直接编码进字节缓冲：struct_size, abi, byte_count, flags,
+/// fg[4], bg[4], attributes, reserved, link_offset, link_byte_count。
+
+///|
+/// C: ot_scene_slider_options，sizeof == 64。orientation: 0=horizontal 1=vertical。
+priv struct SliderOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  orientation : UInt32
+  reserved : UInt32
+  min : Double
+  max : Double
+  value : Double
+  viewport_size : Double
+  foreground01 : UInt32
+  foreground23 : UInt32
+  background01 : UInt32
+  background23 : UInt32
+}
+
+///|
+/// StyledChunk / SliderOptions 的 out 容器不适用（它们是输入记录，
+/// 由字节缓冲编码），这里提供解析结果不需要；输入记录用 builder 编码。

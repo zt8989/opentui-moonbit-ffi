@@ -16,6 +16,8 @@ pub struct Renderer {
   mut clock_id : Int32
   mut stop_flag : Bool
   mut key_handler : ((@keymap.KeyStroke) -> Unit raise)?
+  mut use_mouse : Bool
+  mut mouse_handler : ((MouseEvent) -> Unit raise)?
 }
 
 ///|
@@ -120,6 +122,8 @@ pub fn Renderer::create(
     clock_id: -1,
     stop_flag: false,
     key_handler: None,
+    use_mouse: false,
+    mouse_handler: None,
   }
   if use_terminal {
     renderer.enable_raw_mode()
@@ -160,10 +164,26 @@ pub fn Renderer::stop(self : Renderer) -> Unit {
 }
 
 ///|
+/// paint 的鼠标开关包装。
+fn paint_with_mouse(
+  context : Context,
+  session : OtHandle,
+  background : RgbaColor,
+  use_mouse : Bool,
+) -> Result[SceneFrameRequest, NativeError] {
+  paint(context, session, background~, use_mouse~)
+}
+
+///|
 /// 渲染一帧并把输出交付到 stdout（对应 renderer 的帧调度）。
 pub fn Renderer::render(self : Renderer) -> Unit raise {
   let frame = unwrap(
-    paint(self.context, self.session, background=self.background),
+    paint_with_mouse(
+      self.context,
+      self.session,
+      self.background,
+      self.use_mouse,
+    ),
   )
   let outcome = unwrap(commit_frame(self.context, self.session, frame))
   if outcome == OT_RENDER_PENDING || outcome == OT_RENDER_PRESENTED {
@@ -199,6 +219,7 @@ fn next_node(
     RootNode => OT_SCENE_ROOT
     BoxNode => OT_SCENE_BOX
     TextNode => OT_SCENE_TEXT
+    SliderNode => OT_SCENE_SLIDER
   }
   unwrap(create_node(context, session, ot_kind, num~))
 }
@@ -254,6 +275,21 @@ fn flush_styles_of(
 }
 
 ///|
+/// 启用鼠标上报（paint 时带 use_mouse；对应 renderer.enableMouse()）。
+pub fn Renderer::enable_mouse(self : Renderer) -> Unit {
+  self.use_mouse = true
+}
+
+///|
+/// 注册鼠标回调（对应 renderer.on(MouseEvent)）。
+pub fn Renderer::on_mouse(
+  self : Renderer,
+  handler : (MouseEvent) -> Unit raise,
+) -> Unit {
+  self.mouse_handler = Some(handler)
+}
+
+///|
 /// 阻塞交互循环（对应 renderer 的事件循环）：泵送终端工作、阻塞读
 /// stdin、解析按键并回调 on_key，直到 stop() 或 stdin EOF。
 /// use_terminal=false 时读到 EOF 即返回。
@@ -285,6 +321,19 @@ pub fn Renderer::run(self : Renderer) -> Unit raise {
       ),
     )
     for ev in fed.events() {
+      if ev.kind() == OT_INPUT_MOUSE {
+        match self.mouse_handler {
+          Some(handler) =>
+            handler({
+              action: ev.action(),
+              button: ev.code(),
+              x: ev.x(),
+              y: ev.y(),
+            })
+          None => ()
+        }
+        continue
+      }
       if ev.kind() != OT_INPUT_KEY {
         continue
       }

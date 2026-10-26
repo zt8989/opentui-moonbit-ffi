@@ -35,6 +35,7 @@
 │   │   ├── ui_style.mbt        # StyleBuilder：ot_scene_flush 布局属性记录
 │   │   ├── ui_node.mbt         # TS 兼容层：Renderable/Box/Text（new_box/new_text）
 │   │   ├── ui_renderer.mbt     # TS 兼容层：Renderer（create/root/add/render/on_key/run）
+│   │   ├── ui_extra.mbt        # TS 兼容层：styled text chunks、slider、鼠标与命中测试
 │   │   ├── ui_terminal.mbt     # 终端 raw mode、stdin、输入事件→KeyStroke
 │   │   └── ffi_test.mbt        # 纯 MoonBit 侧单元测试
 │   ├── keymap/                 # @opentui/keymap 核心的 MoonBit 移植
@@ -101,6 +102,13 @@ renderer.run()
   paint 记录整体替换（内部缓存全量重建），文本走 text options。
 - `Renderable::update_style(fn(b, h) { ... })` 可把多条布局变更合并为
   一次 flush。
+- 富文本：`text.set_styled_chunks([@core.Chunk::make(text=, fg=, attributes=), …])`
+  （每段独立颜色/属性；`flags` 只接受 FOREGROUND/BACKGROUND/LINK，
+  attributes 位 0..7 走独立字段——混入 flags 会得到 OT_INVALID_ARGUMENT）。
+- 原生 slider：`new_slider(renderer, orientation=, min=, max=, value=)`
+  + `slider.set_slider_value(value=)`。
+- 鼠标：`renderer.enable_mouse()` + `renderer.on_mouse(fn(mouse) …)` +
+  `renderer.hit_test(x, y)`（返回公开节点号；paint 时带 use_mouse）。
 - 解析失败按默认值处理（lossy），保证 UI 不因拼写错误崩溃。
 
 ## keymap 包（@opentui/keymap 核心移植）
