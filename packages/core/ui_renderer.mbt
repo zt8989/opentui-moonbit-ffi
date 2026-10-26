@@ -30,6 +30,7 @@ pub struct Renderer {
   mut paste_handler : ((String) -> Unit raise)?
   // FrameBuffer 节点：公开节点号 → 离屏缓冲（RECORD 时供录制流查表）
   framebuffers : Map[UInt32, FrameBuffer]
+  mut hook_gen : UInt64
   embedded_terminals : Map[UInt32, EmbeddedTerminal]
   mut has_hooks : Bool
   // 选区控制器（enable_selection 启用；对应 TS renderer 的跨节点选区）
@@ -89,8 +90,8 @@ pub fn Renderer::create(
     create_session(
       context,
       chunk_size=4096,
-      span_capacity=8,
-      max_bytes=65536UL,
+      span_capacity=512,
+      max_bytes=1048576UL,
       control_capacity=4096,
     ),
   )
@@ -151,6 +152,7 @@ pub fn Renderer::create(
     focus_handler: None,
     paste_handler: None,
     framebuffers: Map::new(),
+    hook_gen: 0UL,
     embedded_terminals: Map::new(),
     has_hooks: false,
     selectables: [],
@@ -315,10 +317,10 @@ fn Renderer::build_recording(
       (slot[off + 3].to_uint() << 24)
     }
     let hooks = u32_at(28)
+    let num = u32_at(24)
     if hooks.lor(OT_SCENE_HOOK_RENDER_SELF) != hooks {
       continue
     }
-    let num = u32_at(24)
     // 内嵌终端：录制期内先把屏幕合成进节点缓冲（TS renderSelf 等价）
     match self.embedded_terminals.get(num) {
       Some(term) =>

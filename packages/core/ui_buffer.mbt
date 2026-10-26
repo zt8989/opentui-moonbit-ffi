@@ -167,13 +167,15 @@ pub fn new_framebuffer(
     num~,
     paint=empty_paint(),
   )
-  // 钩子 generation 非 0；initial 尺寸在首次布局前提供基线
+  // 钩子 generation 全局递增（原生用它排序/识别阶段）；
+  // RENDER_SELF 必须伴随 RENDER_AFTER（对齐 TS 的 nativeFlags 逻辑）
+  renderer.hook_gen = renderer.hook_gen + 1
   rethrow_result(
     set_hooks(
       renderer.context,
       node.handle,
-      flags=OT_SCENE_HOOK_RENDER_SELF,
-      generation=1UL,
+      flags=OT_SCENE_HOOK_RENDER_SELF.lor(OT_SCENE_HOOK_RENDER_AFTER),
+      generation=renderer.hook_gen,
       initial_width=width.to_double(),
       initial_height=height.to_double(),
     ),
@@ -220,4 +222,234 @@ pub fn FrameBuffer::resize(
     buffer_resize(self.context, self.handle, width~, height~),
   )
   { context: self.context, handle: self.handle, width, height }
+}
+
+///|
+/// 把 Float 数组序列化为小端 f32 字节缓冲（grayscale 传参用）。
+pub fn floats_to_bytes(values : FixedArray[Float]) -> FixedArray[Byte] {
+  let buf : FixedArray[Byte] = FixedArray::make(values.length() * 4, 0)
+  for i, v in values {
+    let bits : Int = v.reinterpret_as_int()
+    let base = i * 4
+    buf[base] = (bits & 0xFF).to_byte()
+    buf[base + 1] = ((bits >> 8) & 0xFF).to_byte()
+    buf[base + 2] = ((bits >> 16) & 0xFF).to_byte()
+    buf[base + 3] = ((bits >> 24) & 0xFF).to_byte()
+  }
+  buf
+}
+
+///|
+/// 绘制灰度采样图（intensity 0..1，宽×高个采样；超采样变体传
+/// supersample=true，采样图为放大后的格网）。fg/bg 依据强度插值。
+pub fn FrameBuffer::draw_grayscale(
+  self : FrameBuffer,
+  intensities~ : FixedArray[Float],
+  x~ : Int32 = 0,
+  y~ : Int32 = 0,
+  width~ : UInt32,
+  height~ : UInt32,
+  fg~ : String = "#ffffff",
+  bg~ : String = "#000000",
+  supersample~ : Bool = false,
+) -> Unit raise {
+  let data = floats_to_bytes(intensities)
+  let fg_color = parse_color_lossy(fg)
+  let bg_color = parse_color_lossy(bg)
+  rethrow_result(
+    check(
+      "ot_buffer_draw_grayscale",
+      ot_buffer_draw_grayscale_shim(
+        self.context,
+        self.handle,
+        data,
+        data.length().reinterpret_as_uint() / 4,
+        x,
+        y,
+        width,
+        height,
+        pack_u16x2(fg_color.0, fg_color.1),
+        pack_u16x2(fg_color.2, fg_color.3),
+        pack_u16x2(bg_color.0, bg_color.1),
+        pack_u16x2(bg_color.2, bg_color.3),
+        if supersample { 1 } else { 0 },
+      ),
+    ),
+  )
+}
+
+///|
+/// 绘制打包像素（格式由原生约定，见 opentui.h 的 draw_packed）。
+pub fn FrameBuffer::draw_packed(
+  self : FrameBuffer,
+  data~ : FixedArray[Byte],
+  x~ : Int32 = 0,
+  y~ : Int32 = 0,
+  width~ : UInt32,
+  height~ : UInt32,
+) -> Unit raise {
+  rethrow_result(
+    check(
+      "ot_buffer_draw_packed",
+      ot_buffer_draw_packed_shim(
+        self.context,
+        self.handle,
+        data,
+        data.length().reinterpret_as_uint(),
+        x,
+        y,
+        width,
+        height,
+      ),
+    ),
+  )
+}
+
+///|
+/// 绘制超采样像素数据（format/stride 按原生约定）。
+pub fn FrameBuffer::draw_supersample(
+  self : FrameBuffer,
+  data~ : FixedArray[Byte],
+  x~ : Int32 = 0,
+  y~ : Int32 = 0,
+  format~ : UInt32 = 0,
+  stride~ : UInt32 = 0,
+) -> Unit raise {
+  rethrow_result(
+    check(
+      "ot_buffer_draw_supersample",
+      ot_buffer_draw_supersample_shim(
+        self.context,
+        self.handle,
+        data,
+        data.length().reinterpret_as_uint(),
+        x,
+        y,
+        format,
+        stride,
+      ),
+    ),
+  )
+}
+
+///|
+/// Unicode 资源（字素池：宽度测量 + 逐字素绘制记录）。
+pub struct UnicodeResource {
+  context : Context
+  handle : OtHandle
+}
+
+///|
+/// 一个绘制记录：display 宽度 + 字素池字符。
+pub struct UnicodeCharView {
+  width : Int
+  character : UInt32
+}
+
+///|
+pub fn UnicodeCharView::width(self : UnicodeCharView) -> Int {
+  self.width
+}
+
+///|
+pub fn UnicodeCharView::character(self : UnicodeCharView) -> UInt32 {
+  self.character
+}
+
+///|
+/// 创建 Unicode 资源（UTF-8 文本；width_method 同 OT_WIDTH_METHOD_*）。
+pub fn UnicodeResource::create(
+  renderer : Renderer,
+  text~ : String,
+  width_method~ : UInt32 = OT_WIDTH_METHOD_WCWIDTH,
+) -> UnicodeResource raise {
+  let encoded = @utf8.encode(text)
+  let bytes : FixedArray[Byte] = FixedArray::make(encoded.length(), 0)
+  for i in 0..<encoded.length() {
+    bytes[i] = encoded[i]
+  }
+  let out : HandleOut = { context_id: 0, slot: 0, generation: 0, }
+  rethrow_result(
+    check(
+      "ot_unicode_create",
+      ot_unicode_create(
+        renderer.context,
+        bytes,
+        bytes.length().reinterpret_as_uint(),
+        width_method,
+        out,
+      ),
+    ),
+  )
+  { context: renderer.context, handle: out.to_handle() }
+}
+
+///|
+/// 销毁资源。
+pub fn UnicodeResource::destroy(self : UnicodeResource) -> Unit raise {
+  rethrow_result(
+    check("ot_unicode_destroy", ot_unicode_destroy(self.context, self.handle)),
+  )
+}
+
+///|
+/// 读取字素记录（宽度 + 池内字符）。
+pub fn UnicodeResource::chars(self : UnicodeResource) -> Array[UnicodeCharView] raise {
+  let buf : FixedArray[Byte] = FixedArray::make(1024 * 8, 0)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  rethrow_result(
+    check(
+      "ot_unicode_get",
+      ot_unicode_get(self.context, self.handle, buf, 1024, out),
+    ),
+  )
+  let result : Array[UnicodeCharView] = []
+  let count = out[0].reinterpret_as_int()
+  let mut i = 0
+  while i < count {
+    let base = i * 8
+    let u32_at = fn(off : Int) -> UInt32 {
+      buf[off].to_uint() |
+      (buf[off + 1].to_uint() << 8) |
+      (buf[off + 2].to_uint() << 16) |
+      (buf[off + 3].to_uint() << 24)
+    }
+    result.push({ width: u32_at(base).reinterpret_as_int(), character: u32_at(base + 4) })
+    i += 1
+  }
+  result
+}
+
+///|
+/// 把 Unicode 资源的第 index 个字素画到缓冲上。
+pub fn FrameBuffer::draw_unicode(
+  self : FrameBuffer,
+  unicode : UnicodeResource,
+  index~ : Int,
+  x~ : Int32 = 0,
+  y~ : Int32 = 0,
+  fg~ : String = "#ffffff",
+  bg~ : String = "#000000",
+  attributes~ : UInt32 = 0,
+) -> Unit raise {
+  let fg_color = parse_color_lossy(fg)
+  let bg_color = parse_color_lossy(bg)
+  rethrow_result(
+    check(
+      "ot_buffer_draw_unicode",
+      ot_buffer_draw_unicode_shim(
+        self.context,
+        self.handle,
+        unicode.handle,
+        index.reinterpret_as_uint(),
+        x,
+        y,
+        pack_u16x2(fg_color.0, fg_color.1),
+        pack_u16x2(fg_color.2, fg_color.3),
+        pack_u16x2(bg_color.0, bg_color.1),
+        pack_u16x2(bg_color.2, bg_color.3),
+        attributes,
+      ),
+    ),
+  )
 }

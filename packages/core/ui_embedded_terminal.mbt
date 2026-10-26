@@ -372,12 +372,13 @@ pub fn new_embedded_terminal(
     num~,
     paint=empty_paint(),
   )
+  renderer.hook_gen = renderer.hook_gen + 1
   rethrow_result(
     set_hooks(
       renderer.context,
       node.handle,
-      flags=OT_SCENE_HOOK_RENDER_SELF,
-      generation=1UL,
+      flags=OT_SCENE_HOOK_RENDER_SELF.lor(OT_SCENE_HOOK_RENDER_AFTER),
+      generation=renderer.hook_gen,
       initial_width=width.to_double(),
       initial_height=height.to_double(),
     ),

@@ -1,0 +1,15 @@
+pkgtype(kind: "executable")
+
+import {
+  "zt8989/opentui-moonbit-ffi/packages/core",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/strconv",
+}
+
+options(
+  link: {
+    "native": {
+      "cc-link-flags": "-Lvendor/dist/aarch64-macos -Wl,-rpath,@executable_path/../../../../../../../vendor/dist/aarch64-macos -lopentui",
+    },
+  },
+)

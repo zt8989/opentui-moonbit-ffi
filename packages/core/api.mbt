@@ -1365,11 +1365,12 @@ pub fn frame_step_ack(
 
 ///|
 /// 一次帧尝试的录制上限：slots 数少（FrameBuffer 节点数），64 足够。
-const PAINT_SLOT_BYTES : Int32 = 160
+const PAINT_SLOT_BYTES : Int32 = 152
 
 ///|
-/// 读取 RECORD 请求的全部 slots。返回按绘制顺序的字节记录数组，
+/// 读取 RECORD 请求的全部 slots。返回按绘制顺序的 152 字节记录数组，
 /// 每条 160 字节（ot_scene_paint_slot，152 字节补齐到 8 的倍数）。
+///|
 pub fn frame_paint_slots(
   context : Context,
   session : OtHandle,

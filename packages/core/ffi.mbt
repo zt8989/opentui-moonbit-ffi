@@ -1470,3 +1470,91 @@ extern "C" fn ot_embedded_terminal_encode_focus(
   capacity : UInt32,
   out_count : FixedArray[UInt32],
 ) -> Int32 = "ot_embedded_terminal_encode_focus"
+
+///|
+// 缓冲绘制扩展：grayscale/supersample/packed/unicode/grid 全部走
+// frame=NULL shim（离屏缓冲路径）。fg/bg 颜色打包为 u32 对。
+
+///|
+#borrow(context, buffer, data)
+extern "C" fn ot_buffer_draw_grayscale_shim(
+  context : Context,
+  buffer : OtHandle,
+  data : FixedArray[Byte],
+  sample_count : UInt32,
+  x : Int32,
+  y : Int32,
+  width : UInt32,
+  height : UInt32,
+  fg01 : UInt32,
+  fg23 : UInt32,
+  bg01 : UInt32,
+  bg23 : UInt32,
+  supersampled : UInt32,
+) -> Int32 = "ot_buffer_draw_grayscale_offscreen"
+
+///|
+#borrow(context, buffer, data)
+extern "C" fn ot_buffer_draw_supersample_shim(
+  context : Context,
+  buffer : OtHandle,
+  data : FixedArray[Byte],
+  byte_count : UInt32,
+  x : Int32,
+  y : Int32,
+  format : UInt32,
+  stride : UInt32,
+) -> Int32 = "ot_buffer_draw_supersample_offscreen"
+
+///|
+#borrow(context, buffer, data)
+extern "C" fn ot_buffer_draw_packed_shim(
+  context : Context,
+  buffer : OtHandle,
+  data : FixedArray[Byte],
+  byte_count : UInt32,
+  x : Int32,
+  y : Int32,
+  width : UInt32,
+  height : UInt32,
+) -> Int32 = "ot_buffer_draw_packed_offscreen"
+
+///|
+#borrow(context, bytes, out_unicode)
+extern "C" fn ot_unicode_create(
+  context : Context,
+  bytes : FixedArray[Byte],
+  byte_count : UInt32,
+  width_method : UInt32,
+  out_unicode : HandleOut,
+) -> Int32 = "ot_unicode_create"
+
+///|
+#borrow(context, unicode)
+extern "C" fn ot_unicode_destroy(context : Context, unicode : OtHandle) -> Int32 = "ot_unicode_destroy"
+
+///|
+#borrow(context, unicode, chars, out_count)
+extern "C" fn ot_unicode_get(
+  context : Context,
+  unicode : OtHandle,
+  chars : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_unicode_get"
+
+///|
+#borrow(context, buffer, unicode)
+extern "C" fn ot_buffer_draw_unicode_shim(
+  context : Context,
+  buffer : OtHandle,
+  unicode : OtHandle,
+  index : UInt32,
+  x : Int32,
+  y : Int32,
+  fg01 : UInt32,
+  fg23 : UInt32,
+  bg01 : UInt32,
+  bg23 : UInt32,
+  attributes : UInt32,
+) -> Int32 = "ot_buffer_draw_unicode_offscreen"

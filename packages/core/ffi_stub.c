@@ -530,3 +530,81 @@ extern _Bool audioIsCaptureRunning(ot_context *context);
 uint32_t audio_is_capture_running_shim(ot_context *context) {
   return audioIsCaptureRunning(context) ? 1u : 0u;
 }
+
+
+// 缓冲绘制扩展的离屏 shim（frame 固定 NULL），fg/bg 打包为 u32 对。
+extern int32_t ot_buffer_draw_grayscale(ot_context *context,
+                                        const ot_handle *target,
+                                        const ot_scene_frame_request *frame,
+                                        const float *data,
+                                        uint32_t sample_count, int32_t x,
+                                        int32_t y, uint32_t width,
+                                        uint32_t height,
+                                        const uint16_t *foreground,
+                                        const uint16_t *background,
+                                        uint32_t supersampled);
+
+int32_t ot_buffer_draw_grayscale_offscreen(
+    ot_context *context, const ot_handle *buffer, const uint8_t *data,
+    uint32_t sample_count, int32_t x, int32_t y, uint32_t width,
+    uint32_t height, uint32_t fg01, uint32_t fg23, uint32_t bg01,
+    uint32_t bg23, uint32_t supersampled) {
+  uint16_t fg[4] = {(uint16_t)(fg01 & 0xFFFF), (uint16_t)(fg01 >> 16),
+                    (uint16_t)(fg23 & 0xFFFF), (uint16_t)(fg23 >> 16)};
+  uint16_t bg[4] = {(uint16_t)(bg01 & 0xFFFF), (uint16_t)(bg01 >> 16),
+                    (uint16_t)(bg23 & 0xFFFF), (uint16_t)(bg23 >> 16)};
+  return ot_buffer_draw_grayscale(context, buffer, 0, (const float *)data,
+                                  sample_count, x, y, width, height, fg, bg,
+                                  supersampled);
+}
+
+extern int32_t ot_buffer_draw_supersample(ot_context *context,
+                                          const ot_handle *target,
+                                          const ot_scene_frame_request *frame,
+                                          const uint8_t *data,
+                                          uint32_t byte_count, int32_t x,
+                                          int32_t y, uint32_t format,
+                                          uint32_t stride);
+
+int32_t ot_buffer_draw_supersample_offscreen(
+    ot_context *context, const ot_handle *buffer, const uint8_t *data,
+    uint32_t byte_count, int32_t x, int32_t y, uint32_t format,
+    uint32_t stride) {
+  return ot_buffer_draw_supersample(context, buffer, 0, data, byte_count, x, y,
+                                    format, stride);
+}
+
+extern int32_t ot_buffer_draw_packed(ot_context *context,
+                                     const ot_handle *target,
+                                     const ot_scene_frame_request *frame,
+                                     const uint8_t *data, uint32_t byte_count,
+                                     int32_t x, int32_t y, uint32_t width,
+                                     uint32_t height);
+
+int32_t ot_buffer_draw_packed_offscreen(ot_context *context,
+                                        const ot_handle *buffer,
+                                        const uint8_t *data,
+                                        uint32_t byte_count, int32_t x,
+                                        int32_t y, uint32_t width,
+                                        uint32_t height) {
+  return ot_buffer_draw_packed(context, buffer, 0, data, byte_count, x, y,
+                               width, height);
+}
+
+extern int32_t ot_buffer_draw_unicode(
+    ot_context *context, const ot_handle *target,
+    const ot_scene_frame_request *frame, const ot_handle *unicode,
+    uint32_t index, int32_t x, int32_t y, const uint16_t *foreground,
+    const uint16_t *background, uint32_t attributes);
+
+int32_t ot_buffer_draw_unicode_offscreen(
+    ot_context *context, const ot_handle *buffer, const ot_handle *unicode,
+    uint32_t index, int32_t x, int32_t y, uint32_t fg01, uint32_t fg23,
+    uint32_t bg01, uint32_t bg23, uint32_t attributes) {
+  uint16_t fg[4] = {(uint16_t)(fg01 & 0xFFFF), (uint16_t)(fg01 >> 16),
+                    (uint16_t)(fg23 & 0xFFFF), (uint16_t)(fg23 >> 16)};
+  uint16_t bg[4] = {(uint16_t)(bg01 & 0xFFFF), (uint16_t)(bg01 >> 16),
+                    (uint16_t)(bg23 & 0xFFFF), (uint16_t)(bg23 >> 16)};
+  return ot_buffer_draw_unicode(context, buffer, 0, unicode, index, x, y, fg,
+                                bg, attributes);
+}

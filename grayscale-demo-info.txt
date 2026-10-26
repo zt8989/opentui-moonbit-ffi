@@ -1,0 +1,2 @@
+pattern=Plasma
+panel=38x18 ss=76x36
