@@ -365,6 +365,7 @@ fn next_node(
     TextNode => OT_SCENE_TEXT
     SliderNode => OT_SCENE_SLIDER
     CustomNode => OT_SCENE_CUSTOM
+    EditorNode => OT_SCENE_EDITOR
   }
   unwrap(create_node(context, session, ot_kind, num~))
 }
@@ -849,3 +850,9 @@ fn Renderer::apply_selection(self : Renderer, focus_x : Int, focus_y : Int, is_s
   self.sel_touched = still_touched
 }
 
+
+///|
+/// 复制到终端剪贴板（OSC52；返回 false 表示终端不支持）。
+pub fn Renderer::copy_to_clipboard(self : Renderer, text~ : String) -> Bool raise {
+  unwrap(session_copy_to_clipboard(self.context, self.session, text~)) > 0
+}

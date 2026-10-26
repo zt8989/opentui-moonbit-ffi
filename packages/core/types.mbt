@@ -417,3 +417,123 @@ priv struct SceneLayout {
   mut screen_x : Double
   mut screen_y : Double
 }
+
+///|
+/// C: ot_edit_buffer_options，sizeof == 16。
+priv struct EditBufferOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  width_method : UInt32
+  reserved : UInt32
+}
+
+///|
+/// C: ot_edit_buffer_info，sizeof == 48（头8 + u64 + 8×u32）。out 记录。
+priv struct EditBufferInfo {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut content_epoch : UInt64
+  mut byte_count : UInt32
+  mut line_count : UInt32
+  mut cursor_row : UInt32
+  mut cursor_col : UInt32
+  mut cursor_offset : UInt32
+  mut can_undo : UInt32
+  mut can_redo : UInt32
+  mut tab_width : UInt32
+}
+
+///|
+/// C: ot_editor_viewport，sizeof == 24。
+priv struct EditorViewport {
+  struct_size : UInt32
+  abi_version : UInt32
+  x : UInt32
+  y : UInt32
+  width : UInt32
+  height : UInt32
+}
+
+///|
+/// C: ot_editor_view_info，sizeof == 36。out 记录。
+priv struct EditorViewInfo {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut virtual_line_count : UInt32
+  mut total_virtual_line_count : UInt32
+  mut selection_present : UInt32
+  mut selection_start : UInt32
+  mut selection_end : UInt32
+  mut selection_occupancy : UInt32
+}
+
+///|
+/// C: ot_edit_position，sizeof == 24（edit buffer 位置；valid=0 表示无效）。
+priv struct EditPosition {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut valid : UInt32
+  mut row : UInt32
+  mut col : UInt32
+  mut offset : UInt32
+}
+
+///|
+/// C: ot_editor_position，sizeof == 28。out 记录。
+priv struct EditorPosition {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut visual_row : UInt32
+  mut visual_col : UInt32
+  mut logical_row : UInt32
+  mut logical_col : UInt32
+  mut offset : UInt32
+}
+
+///|
+/// C: ot_editor_selection，sizeof == 64（按声明顺序；含尾部对齐补齐）。
+priv struct EditorSelection {
+  struct_size : UInt32
+  abi_version : UInt32
+  operation : UInt32
+  behavior : UInt32
+  start : UInt32
+  end : UInt32
+  anchor_x : Int32
+  anchor_y : Int32
+  focus_x : Int32
+  focus_y : Int32
+  update_cursor : UInt32
+  follow_cursor : UInt32
+  flags : UInt32
+  reserved : UInt32
+  foreground01 : UInt32
+  foreground23 : UInt32
+  background01 : UInt32
+  background23 : UInt32
+}
+
+///|
+/// C: ot_scene_editor_options，sizeof == 40（8 + 4×u32 + color 8 + 2×u32 + 补齐）。
+priv struct SceneEditorOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  show_cursor : UInt32
+  style : UInt32
+  blinking : UInt32
+  reserved : UInt32
+  color01 : UInt32
+  color23 : UInt32
+  mouse_pointer : UInt32
+  reserved2 : UInt32
+}
+
+///|
+/// C: ot_edit_highlight，sizeof == 20。
+priv struct EditHighlight {
+  start : UInt32
+  end : UInt32
+  style_id : UInt32
+  priority : UInt32
+  ref_ : UInt32
+}

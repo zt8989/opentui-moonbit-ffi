@@ -364,3 +364,241 @@ extern "C" fn ot_scene_get_layout(
   observation : UInt32,
   out_layout : SceneLayout,
 ) -> Int32 = "ot_scene_get_layout"
+
+///|
+#borrow(context, options, out_buffer)
+extern "C" fn ot_edit_buffer_create(
+  context : Context,
+  options : EditBufferOptions,
+  out_buffer : HandleOut,
+) -> Int32 = "ot_edit_buffer_create"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_edit_buffer_destroy(context : Context, buffer : OtHandle) -> Int32 = "ot_edit_buffer_destroy"
+
+///|
+#borrow(buffer, bytes)
+extern "C" fn ot_edit_buffer_set_text(
+  context : Context,
+  buffer : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+  preserve_history : UInt32,
+) -> Int32 = "ot_edit_buffer_set_text"
+
+///|
+#borrow(buffer, bytes)
+extern "C" fn ot_edit_buffer_insert_text(
+  context : Context,
+  buffer : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+) -> Int32 = "ot_edit_buffer_insert_text"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_edit_buffer_delete_range(
+  context : Context,
+  buffer : OtHandle,
+  start_row : UInt32,
+  start_col : UInt32,
+  end_row : UInt32,
+  end_col : UInt32,
+) -> Int32 = "ot_edit_buffer_delete_range"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_edit_buffer_set_cursor(
+  context : Context,
+  buffer : OtHandle,
+  row : UInt32,
+  col : UInt32,
+) -> Int32 = "ot_edit_buffer_set_cursor"
+
+///|
+#borrow(buffer, bytes, out_count)
+extern "C" fn ot_edit_buffer_get_text(
+  context : Context,
+  buffer : OtHandle,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_edit_buffer_get_text"
+
+///|
+#borrow(buffer, out_info)
+extern "C" fn ot_edit_buffer_get_info(
+  context : Context,
+  buffer : OtHandle,
+  out_info : EditBufferInfo,
+) -> Int32 = "ot_edit_buffer_get_info"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_edit_buffer_set_tab_width(
+  context : Context,
+  buffer : OtHandle,
+  width : UInt32,
+) -> Int32 = "ot_edit_buffer_set_tab_width"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_edit_buffer_command(
+  context : Context,
+  buffer : OtHandle,
+  command : UInt32,
+  argument : UInt32,
+) -> Int32 = "ot_edit_buffer_command"
+
+///|
+#borrow(buffer, highlight)
+extern "C" fn ot_edit_buffer_highlight(
+  context : Context,
+  buffer : OtHandle,
+  operation : UInt32,
+  argument : UInt32,
+  highlight : EditHighlight,
+) -> Int32 = "ot_edit_buffer_highlight"
+
+///|
+#borrow(context, buffer, out_view)
+extern "C" fn ot_editor_view_create(
+  context : Context,
+  buffer : OtHandle,
+  width : UInt32,
+  height : UInt32,
+  out_view : HandleOut,
+) -> Int32 = "ot_editor_view_create"
+
+///|
+#borrow(view)
+extern "C" fn ot_editor_view_destroy(context : Context, view : OtHandle) -> Int32 = "ot_editor_view_destroy"
+
+///|
+#borrow(view, viewport)
+extern "C" fn ot_editor_view_set_viewport(
+  context : Context,
+  view : OtHandle,
+  viewport : EditorViewport,
+  size_only : UInt32,
+  move_cursor : UInt32,
+) -> Int32 = "ot_editor_view_set_viewport"
+
+///|
+#borrow(view)
+extern "C" fn ot_editor_view_command(
+  context : Context,
+  view : OtHandle,
+  command : UInt32,
+  argument : UInt32,
+) -> Int32 = "ot_editor_view_command"
+
+///|
+#borrow(view, bytes, out_steps)
+extern "C" fn ot_editor_view_replace_selection(
+  context : Context,
+  view : OtHandle,
+  bytes : Bytes,
+  byte_count : UInt32,
+  out_steps : FixedArray[UInt32],
+) -> Int32 = "ot_editor_view_replace_selection"
+
+///|
+#borrow(context, node, view)
+extern "C" fn ot_scene_set_editor_view(
+  context : Context,
+  node : OtHandle,
+  view : OtHandle,
+) -> Int32 = "ot_scene_set_editor_view"
+
+///|
+#borrow(context, node, options)
+extern "C" fn ot_scene_set_editor_options(
+  context : Context,
+  node : OtHandle,
+  options : SceneEditorOptions,
+) -> Int32 = "ot_scene_set_editor_options"
+
+///|
+#borrow(view, out_info)
+extern "C" fn ot_editor_view_get_info(
+  context : Context,
+  view : OtHandle,
+  follow_cursor : UInt32,
+  out_info : EditorViewInfo,
+) -> Int32 = "ot_editor_view_get_info"
+
+///|
+#borrow(view, bytes, out_count)
+extern "C" fn ot_editor_view_get_selected_text(
+  context : Context,
+  view : OtHandle,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_editor_view_get_selected_text"
+
+///|
+#borrow(view, out_position)
+extern "C" fn ot_editor_view_get_position(
+  context : Context,
+  view : OtHandle,
+  query : UInt32,
+  out_position : EditorPosition,
+) -> Int32 = "ot_editor_view_get_position"
+
+///|
+#borrow(buffer, out_position)
+extern "C" fn ot_edit_buffer_get_position(
+  context : Context,
+  buffer : OtHandle,
+  query : UInt32,
+  a : UInt32,
+  b : UInt32,
+  out_position : EditPosition,
+) -> Int32 = "ot_edit_buffer_get_position"
+
+///|
+// 空文本清空对应 selection。
+#borrow(context, session, bytes, out_written)
+extern "C" fn ot_session_clipboard(
+  context : Context,
+  session : OtHandle,
+  target : UInt32,
+  bytes : Bytes,
+  byte_count : UInt32,
+  out_written : FixedArray[UInt32],
+) -> Int32 = "ot_session_clipboard"
+
+///|
+#borrow(view, selection, out_changed)
+extern "C" fn ot_editor_view_select_shim(
+  context : Context,
+  view : OtHandle,
+  selection : EditorSelection,
+  out_changed : FixedArray[UInt32],
+) -> Int32 = "ot_editor_view_select"
+
+///|
+#borrow(buffer, highlight)
+extern "C" fn ot_edit_buffer_highlight_add_range_shim(
+  context : Context,
+  buffer : OtHandle,
+  highlight : EditHighlight,
+) -> Int32 = "ot_edit_buffer_highlight_add_range"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_edit_buffer_highlight_remove_ref_shim(
+  context : Context,
+  buffer : OtHandle,
+  ref_ : UInt32,
+) -> Int32 = "ot_edit_buffer_highlight_remove_ref"
+
+///|
+#borrow(buffer)
+extern "C" fn ot_edit_buffer_highlight_clear_shim(
+  context : Context,
+  buffer : OtHandle,
+) -> Int32 = "ot_edit_buffer_highlight_clear"

@@ -5,6 +5,8 @@
 // 这里补一个固定传 NULL 的入口，MoonBit 侧分别绑定两个符号。
 
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 typedef struct ot_context ot_context;
 
@@ -146,4 +148,40 @@ int32_t ot_buffer_draw_cell_shim(ot_context *context, const ot_handle *target,
                                  const ot_buffer_draw_cell *record) {
   return ot_buffer_draw(context, target, 0,
                         (const ot_buffer_draw_header *)record, 0, 0, 0, 0, 0);
+}
+
+
+// ot_edit_buffer_highlight 的 ADD_RANGE 路径：MoonBit 侧混合传参
+// （标量×4 + struct 指针）实测被原生拒绝，shim 固定 operation/argument。
+typedef struct ot_edit_highlight {
+  uint32_t start;
+  uint32_t end;
+  uint32_t style_id;
+  uint32_t priority;
+  uint32_t ref;
+} ot_edit_highlight;
+
+extern int32_t ot_edit_buffer_highlight(ot_context *context,
+                                        const ot_handle *buffer,
+                                        uint32_t operation, uint32_t argument,
+                                        const ot_edit_highlight *highlight);
+
+int32_t ot_edit_buffer_highlight_add_range(ot_context *context,
+                                           const ot_handle *buffer,
+                                           const ot_edit_highlight *highlight) {
+  return ot_edit_buffer_highlight(context, buffer, 1 /* ADD_RANGE */, 0,
+                                  highlight);
+}
+
+int32_t ot_edit_buffer_highlight_remove_ref(ot_context *context,
+                                            const ot_handle *buffer,
+                                            uint32_t ref) {
+  // REMOVE_REF 只读 argument；highlight 记录必须为 NULL
+  return ot_edit_buffer_highlight(context, buffer, 2 /* REMOVE_REF */, ref, 0);
+}
+
+int32_t ot_edit_buffer_highlight_clear(ot_context *context,
+                                       const ot_handle *buffer) {
+  // CLEAR_ALL 同样要求 highlight 为 NULL
+  return ot_edit_buffer_highlight(context, buffer, 4 /* CLEAR_ALL */, 0, 0);
 }

@@ -1597,3 +1597,28 @@ pub fn get_layout(
     Err(e) => Err(e)
   }
 }
+
+///|
+/// 写终端剪贴板（OSC52，target 0..3；0=clipboard）。
+/// 返回写入字节数（0 表示终端不支持或输出被拒）。
+pub fn session_copy_to_clipboard(
+  context : Context,
+  session : OtHandle,
+  text~ : String,
+  target~ : UInt32 = OT_CLIPBOARD_TARGET_CLIPBOARD,
+) -> Result[UInt32, NativeError] {
+  let bytes = @utf8.encode(text)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_session_clipboard(
+    context,
+    session,
+    target,
+    bytes,
+    bytes.length().reinterpret_as_uint(),
+    out,
+  )
+  match check("ot_session_clipboard", status) {
+    Ok(_) => Ok(out[0])
+    Err(e) => Err(e)
+  }
+}

@@ -9,6 +9,7 @@ pub enum NodeKind {
   TextNode
   SliderNode
   CustomNode
+  EditorNode
 }
 
 ///|

@@ -607,3 +607,65 @@ pub const OT_LAYOUT_PUBLIC : UInt32 = 0
 
 ///|
 pub const OT_LAYOUT_PAINT : UInt32 = 2
+
+///|
+/// 场景节点类型：editor（绑定 ot_editor_view）
+pub const OT_SCENE_EDITOR : UInt32 = 5
+
+///|
+/// 编辑缓冲命令（ot_edit_buffer_command）
+pub const OT_EDIT_COMMAND_GOTO_LINE : UInt32 = 6
+
+///|
+/// OT_EDIT_BUFFER_CURSOR_OFFSET：命令编号 9（见 opentui.h）
+pub const OT_EDIT_CURSOR_OFFSET_CMD : UInt32 = 9
+
+///|
+/// 编辑器视图命令（ot_editor_view_command）
+pub const OT_EDITOR_MOVE_UP : UInt32 = 0
+
+///|
+pub const OT_EDITOR_MOVE_DOWN : UInt32 = 1
+
+///|
+pub const OT_EDITOR_GOTO_LINE_END : UInt32 = 2
+
+///|
+pub const OT_EDITOR_DELETE_SELECTION : UInt32 = 3
+
+///|
+pub const OT_EDITOR_CURSOR_OFFSET : UInt32 = 4
+
+///|
+/// 选区操作（ot_editor_selection.operation）
+pub const OT_EDITOR_SELECT_SET : UInt32 = 0
+
+///|
+pub const OT_EDITOR_SELECT_UPDATE : UInt32 = 1
+
+///|
+pub const OT_EDITOR_SELECT_RESET : UInt32 = 2
+
+///|
+/// ot_edit_buffer_get_position 的 query
+pub const OT_EDIT_POSITION_CURSOR : UInt32 = 0
+
+///|
+pub const OT_EDIT_POSITION_OFFSET : UInt32 = 4
+
+///|
+pub const OT_EDIT_POSITION_COORDS : UInt32 = 5
+
+///|
+/// 高亮操作（ot_edit_buffer_highlight，extmark 简化实现用）
+pub const OT_EDIT_HIGHLIGHT_ADD_RANGE : UInt32 = 1
+
+///|
+pub const OT_EDIT_HIGHLIGHT_REMOVE_REF : UInt32 = 2
+
+///|
+pub const OT_EDIT_HIGHLIGHT_CLEAR_ALL : UInt32 = 4
+
+///|
+/// 终端剪贴板 target（ot_session_clipboard）：0=clipboard
+pub const OT_CLIPBOARD_TARGET_CLIPBOARD : UInt32 = 0
