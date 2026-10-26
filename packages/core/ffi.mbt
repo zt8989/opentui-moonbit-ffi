@@ -1338,3 +1338,135 @@ extern "C" fn ot_session_set_palette_state(
   background : FixedArray[Byte],
   epoch : UInt32,
 ) -> Int32 = "ot_session_set_palette_state"
+
+///|
+// 内嵌终端：VT 模拟器（宿主喂字节，原生维护屏幕状态）。
+#borrow(context, options, out_terminal)
+extern "C" fn ot_embedded_terminal_create(
+  context : Context,
+  options : EmbeddedTerminalOptions,
+  out_terminal : HandleOut,
+) -> Int32 = "ot_embedded_terminal_create"
+
+///|
+#borrow(context, terminal)
+extern "C" fn ot_embedded_terminal_destroy(context : Context, terminal : OtHandle) -> Int32 = "ot_embedded_terminal_destroy"
+
+///|
+#borrow(context, terminal, bytes)
+extern "C" fn ot_embedded_terminal_write(
+  context : Context,
+  terminal : OtHandle,
+  bytes : FixedArray[Byte],
+  byte_count : UInt32,
+) -> Int32 = "ot_embedded_terminal_write"
+
+///|
+#borrow(context, terminal)
+extern "C" fn ot_embedded_terminal_resize(
+  context : Context,
+  terminal : OtHandle,
+  cols : UInt32,
+  rows : UInt32,
+) -> Int32 = "ot_embedded_terminal_resize"
+
+///|
+#borrow(context, terminal)
+extern "C" fn ot_embedded_terminal_command(
+  context : Context,
+  terminal : OtHandle,
+  command : UInt32,
+  argument : Int32,
+) -> Int32 = "ot_embedded_terminal_command"
+
+///|
+#borrow(context, terminal)
+extern "C" fn ot_embedded_terminal_set_selection(
+  context : Context,
+  terminal : OtHandle,
+  start_x : UInt32,
+  start_y : UInt32,
+  end_x : UInt32,
+  end_y : UInt32,
+) -> Int32 = "ot_embedded_terminal_set_selection"
+
+///|
+#borrow(context, terminal, bytes, out_count)
+extern "C" fn ot_embedded_terminal_get_selected_text(
+  context : Context,
+  terminal : OtHandle,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_embedded_terminal_get_selected_text"
+
+///|
+// 目标缓冲 + 可空 frame（离屏路径）：frame 固定 NULL 的 shim。
+#borrow(context, terminal, target)
+extern "C" fn ot_embedded_terminal_compose_offscreen_shim(
+  context : Context,
+  terminal : OtHandle,
+  target : OtHandle,
+  x : Int32,
+  y : Int32,
+) -> Int32 = "ot_embedded_terminal_compose_offscreen"
+
+///|
+#borrow(context, terminal, out_cursor)
+extern "C" fn ot_embedded_terminal_cursor_get(
+  context : Context,
+  terminal : OtHandle,
+  out_cursor : EmbeddedTerminalCursor,
+) -> Int32 = "ot_embedded_terminal_cursor_get"
+
+///|
+#borrow(context, terminal, bytes, out_count)
+extern "C" fn ot_embedded_terminal_drain_responses(
+  context : Context,
+  terminal : OtHandle,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_embedded_terminal_drain_responses"
+
+///|
+// key 编码打包 shim（key 记录内联为标量，免去 struct 混传）。
+#borrow(context, terminal, key_name, key_text, bytes, out_count)
+extern "C" fn ot_embedded_terminal_encode_key_packed(
+  context : Context,
+  terminal : OtHandle,
+  action : UInt32,
+  mods : UInt32,
+  unshifted_codepoint : UInt32,
+  key_name : FixedArray[Byte],
+  key_len : UInt32,
+  key_text : FixedArray[Byte],
+  text_len : UInt32,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_embedded_terminal_encode_key_packed"
+
+///|
+// paste/focus 直绑（指针+标量形态）。
+#borrow(context, terminal, input, bytes, out_count)
+extern "C" fn ot_embedded_terminal_encode_paste(
+  context : Context,
+  terminal : OtHandle,
+  input : FixedArray[Byte],
+  input_count : UInt32,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_embedded_terminal_encode_paste"
+
+///|
+#borrow(context, terminal, bytes, out_count)
+extern "C" fn ot_embedded_terminal_encode_focus(
+  context : Context,
+  terminal : OtHandle,
+  focused : UInt32,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_embedded_terminal_encode_focus"

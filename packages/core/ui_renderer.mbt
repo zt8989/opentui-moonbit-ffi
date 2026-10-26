@@ -30,6 +30,7 @@ pub struct Renderer {
   mut paste_handler : ((String) -> Unit raise)?
   // FrameBuffer 节点：公开节点号 → 离屏缓冲（RECORD 时供录制流查表）
   framebuffers : Map[UInt32, FrameBuffer]
+  embedded_terminals : Map[UInt32, EmbeddedTerminal]
   mut has_hooks : Bool
   // 选区控制器（enable_selection 启用；对应 TS renderer 的跨节点选区）
   selectables : Array[SelectableNode]
@@ -150,6 +151,7 @@ pub fn Renderer::create(
     focus_handler: None,
     paste_handler: None,
     framebuffers: Map::new(),
+    embedded_terminals: Map::new(),
     has_hooks: false,
     selectables: [],
     selection_enabled: false,
@@ -317,6 +319,15 @@ fn Renderer::build_recording(
       continue
     }
     let num = u32_at(24)
+    // 内嵌终端：录制期内先把屏幕合成进节点缓冲（TS renderSelf 等价）
+    match self.embedded_terminals.get(num) {
+      Some(term) =>
+        match self.framebuffers.get(num) {
+          Some(fb) => term.compose(target=fb, x=0, y=0)
+          None => ()
+        }
+      None => ()
+    }
     match self.framebuffers.get(num) {
       Some(fb) => {
         // SLOT 记录：header{size, operation}(8) + slot(4) + phase(4)

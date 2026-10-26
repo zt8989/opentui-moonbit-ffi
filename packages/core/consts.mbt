@@ -854,3 +854,16 @@ pub const OT_SPLIT_FLAG_NEW_LINE : UInt32 = 1
 
 ///|
 pub const OT_SPLIT_FLAG_TRAILING_NEWLINE : UInt32 = 2
+
+///|
+/// 内嵌终端命令（ot_embedded_terminal_command）
+pub const OT_EMBEDDED_TERMINAL_INVALIDATE : UInt32 = 0
+
+///|
+pub const OT_EMBEDDED_TERMINAL_SCROLL : UInt32 = 1
+
+///|
+pub const OT_EMBEDDED_TERMINAL_CLEAR_SELECTION : UInt32 = 2
+
+///|
+pub const OT_EMBEDDED_TERMINAL_SET_TRANSPARENT_BACKGROUND : UInt32 = 3

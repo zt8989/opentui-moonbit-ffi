@@ -630,3 +630,33 @@ priv struct SessionCaps {
   mut name_words : (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
   mut version_words : (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
 }
+
+///|
+/// C: ot_embedded_terminal_options，sizeof == 24（6×u32）。
+priv struct EmbeddedTerminalOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  cols : UInt32
+  rows : UInt32
+  max_scrollback : UInt32
+  reserved : UInt32
+}
+
+///|
+/// C: ot_embedded_terminal_cursor，sizeof == 56（14×u32）。out 记录。
+priv struct EmbeddedTerminalCursor {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut x : UInt32
+  mut y : UInt32
+  mut has_value : UInt32
+  mut visible : UInt32
+  mut blinking : UInt32
+  mut wide_tail : UInt32
+  mut style : UInt32
+  mut color_has_value : UInt32
+  mut color_r : UInt32
+  mut color_g : UInt32
+  mut color_b : UInt32
+  mut reserved : UInt32
+}

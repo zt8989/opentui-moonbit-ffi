@@ -473,3 +473,51 @@ int32_t ot_session_render_split_with_frame(
   return ot_session_render_split(context, session, frame, snapshots, count,
                                  pinned_render_offset, force, out_status);
 }
+
+// 内嵌终端：compose 离屏路径（frame 固定 NULL）；key 编码打包 shim。
+extern int32_t ot_embedded_terminal_compose(ot_context *context,
+                                           const ot_handle *terminal,
+                                           const ot_handle *target,
+                                           const ot_scene_frame_request *frame,
+                                           int32_t x, int32_t y);
+
+int32_t ot_embedded_terminal_compose_offscreen(ot_context *context,
+                                               const ot_handle *terminal,
+                                               const ot_handle *target, int32_t x,
+                                               int32_t y) {
+  return ot_embedded_terminal_compose(context, terminal, target, 0, x, y);
+}
+
+typedef struct ot_embedded_terminal_key {
+  uint32_t struct_size;
+  uint32_t abi_version;
+  uint32_t action;
+  uint32_t composing;
+  uint32_t mods;
+  uint32_t consumed_mods;
+  uint32_t unshifted_codepoint;
+  uint32_t reserved;
+} ot_embedded_terminal_key;
+
+extern int32_t ot_embedded_terminal_encode_key(
+    ot_context *context, const ot_handle *terminal,
+    const ot_embedded_terminal_key *key, const uint8_t *key_name,
+    uint32_t key_count, const uint8_t *key_text, uint32_t text_count,
+    uint8_t *bytes, uint32_t capacity, uint32_t *out_count);
+
+int32_t ot_embedded_terminal_encode_key_packed(
+    ot_context *context, const ot_handle *terminal, uint32_t action,
+    uint32_t mods, uint32_t unshifted_codepoint, const uint8_t *key_name,
+    uint32_t key_count, const uint8_t *key_text, uint32_t text_count,
+    uint8_t *bytes, uint32_t capacity, uint32_t *out_count) {
+  ot_embedded_terminal_key key;
+  memset(&key, 0, sizeof(key));
+  key.struct_size = (uint32_t)sizeof(key);
+  key.abi_version = 2;
+  key.action = action;
+  key.mods = mods;
+  key.unshifted_codepoint = unshifted_codepoint;
+  return ot_embedded_terminal_encode_key(context, terminal, &key, key_name,
+                                         key_count, key_text, text_count, bytes,
+                                         capacity, out_count);
+}
