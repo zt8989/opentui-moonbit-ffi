@@ -1428,3 +1428,172 @@ pub fn buffer_resize(
 ) -> Result[Unit, NativeError] {
   check("ot_buffer_resize", ot_buffer_resize(context, buffer, width, height))
 }
+
+///|
+/// 应用文本选区（对应 TS 的 sceneSetTextSelection / ot_scene_set_text_selection）。
+/// anchor/focus 是相对节点原点的 cell 坐标；operation 取 OT_SCENE_TEXT_SELECTION_*；
+/// behavior 取 OT_SCENE_TEXT_SELECTION_CELL/WORD/LINE；bg/fg 为 None 时不设置对应颜色位。
+/// 返回选区是否发生变化。
+pub fn set_text_selection(
+  context : Context,
+  node : OtHandle,
+  operation~ : UInt32,
+  anchor_x~ : Int32,
+  anchor_y~ : Int32,
+  focus_x~ : Int32,
+  focus_y~ : Int32,
+  behavior~ : UInt32 = OT_SCENE_TEXT_SELECTION_CELL,
+  bg~ : RgbaColor? = None,
+  fg~ : RgbaColor? = None,
+) -> Result[Bool, NativeError] {
+  let (flags, bgp, fgp) = match (bg, fg) {
+    (Some(b), Some(f)) => {
+      let bp = pack_rgba(b)
+      let fp = pack_rgba(f)
+      (OT_SCENE_TEXT_SELECTION_BACKGROUND.lor(OT_SCENE_TEXT_SELECTION_FOREGROUND), bp, fp)
+    }
+    (Some(b), None) => {
+      let bp = pack_rgba(b)
+      (OT_SCENE_TEXT_SELECTION_BACKGROUND, bp, (0, 0))
+    }
+    (None, Some(f)) => {
+      let fp = pack_rgba(f)
+      (OT_SCENE_TEXT_SELECTION_FOREGROUND, (0, 0), fp)
+    }
+    (None, None) => (0, (0, 0), (0, 0))
+  }
+  let options : TextSelectionOptions = {
+    struct_size: 56,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    operation,
+    behavior,
+    anchor_x,
+    anchor_y,
+    focus_x,
+    focus_y,
+    flags,
+    reserved: 0,
+    background01: bgp.0,
+    background23: bgp.1,
+    foreground01: fgp.0,
+    foreground23: fgp.1,
+  }
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_scene_set_text_selection(context, node, options, out)
+  match check("ot_scene_set_text_selection", status) {
+    Ok(_) => Ok(out[0] != 0)
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 读取文本选区（对应 ot_scene_get_text_selection）。
+/// 返回 (start, end) 字符区间；无选区返回 None。
+pub fn get_text_selection(
+  context : Context,
+  node : OtHandle,
+) -> Result[(Int, Int)?, NativeError] {
+  let out : FixedArray[UInt64] = FixedArray::make(1, 0)
+  let status = ot_scene_get_text_selection(context, node, out)
+  match check("ot_scene_get_text_selection", status) {
+    Ok(_) => {
+      let packed = out[0]
+      if packed == 0xffffffffffffffffUL {
+        Ok(None)
+      } else {
+        let start = (packed >> 32).to_uint().reinterpret_as_int()
+        let end = packed.to_uint().reinterpret_as_int()
+        Ok(Some((start, end)))
+      }
+    }
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 读取选中文本（对应 ot_scene_get_selected_text）。
+pub fn get_selected_text(context : Context, node : OtHandle) -> Result[String, NativeError] {
+  let buf : FixedArray[Byte] = FixedArray::make(4096, 0)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_scene_get_selected_text(context, node, buf, 4096, out)
+  match check("ot_scene_get_selected_text", status) {
+    Ok(_) => {
+      let n = out[0].reinterpret_as_int()
+      if n <= 0 {
+        Ok("")
+      } else {
+        Ok(@utf8.decode_lossy(Bytes::from_array(buf[:n]).exact_view()))
+      }
+    }
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 节点几何快照（ot_scene_layout 的读取视图）。
+pub struct NodeLayout {
+  left : Double
+  top : Double
+  right : Double
+  bottom : Double
+  width : Double
+  height : Double
+  screen_x : Double
+  screen_y : Double
+}
+
+///|
+pub fn NodeLayout::left(self : NodeLayout) -> Double {
+  self.left
+}
+
+///|
+pub fn NodeLayout::top(self : NodeLayout) -> Double {
+  self.top
+}
+
+///|
+pub fn NodeLayout::width(self : NodeLayout) -> Double {
+  self.width
+}
+
+///|
+pub fn NodeLayout::height(self : NodeLayout) -> Double {
+  self.height
+}
+
+///|
+/// 读取节点几何（observation 取 OT_LAYOUT_PUBLIC / OT_LAYOUT_PAINT）。
+pub fn get_layout(
+  context : Context,
+  node : OtHandle,
+  observation~ : UInt32,
+) -> Result[NodeLayout, NativeError] {
+  let out : SceneLayout = {
+    struct_size: 48,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    left: 0.0,
+    top: 0.0,
+    right: 0.0,
+    bottom: 0.0,
+    width: 0.0,
+    height: 0.0,
+    screen_x: 0.0,
+    screen_y: 0.0,
+  }
+  let status = ot_scene_get_layout(context, node, observation, out)
+  match check("ot_scene_get_layout", status) {
+    Ok(_) =>
+      Ok({
+        left: out.left.to_double(),
+        top: out.top.to_double(),
+        right: out.right.to_double(),
+        bottom: out.bottom.to_double(),
+        width: out.width.to_double(),
+        height: out.height.to_double(),
+        screen_x: out.screen_x,
+        screen_y: out.screen_y,
+      })
+    Err(e) => Err(e)
+  }
+}

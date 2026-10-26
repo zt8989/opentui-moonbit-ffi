@@ -37,6 +37,7 @@
 │   │   ├── ui_renderer.mbt     # TS 兼容层：Renderer（create/root/add/render/on_key/run）
 │   │   ├── ui_extra.mbt        # TS 兼容层：styled text chunks、slider、鼠标与命中测试
 │   │   ├── ui_buffer.mbt       # TS 兼容层：FrameBuffer（CUSTOM 节点 + RENDER_SELF 钩子 + step 循环）
+│   │   │                       # 选区控制器（enable_selection/add_selectable/on_selection）
 │   │   ├── ui_terminal.mbt     # 终端 raw mode、stdin、输入事件→KeyStroke
 │   │   └── ffi_test.mbt        # 纯 MoonBit 侧单元测试
 │   ├── keymap/                 # @opentui/keymap 核心的 MoonBit 移植
@@ -65,7 +66,8 @@
 │       ├── link-demo/          # 富文本超链接 + 点击解析 URL
 │       ├── keypress-debug-demo/ # 按键/粘贴事件日志与详情
 │       ├── wide-grapheme-overlay/ # 宽字符背景 + 可拖动半透明色块（FrameBuffer）
-│       └── full-unicode/       # grapheme 窗口/富文本混排（FrameBuffer + 键盘移动）
+│       ├── full-unicode/       # grapheme 窗口/富文本混排（FrameBuffer + 键盘移动）
+│       └── text-selection/     # 跨节点鼠标选区（原生选区高亮 + 选中文本面板）
 ├── scripts/fetch-opentui.sh    # 克隆并构建 OpenTUI 原生库
 └── vendor/dist/<target>/       # opentui.h + libopentui（git 忽略，脚本生成）
 ```

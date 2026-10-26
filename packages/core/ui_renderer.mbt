@@ -2,6 +2,14 @@
 // 持有 Context/Session、场景根、节点号分配、绘制缓存与交互循环。
 
 ///|
+/// 可选中节点注册项（对应 TS 的 selectable + selectionBg/selectionFg）。
+pub struct SelectableNode {
+  node : Renderable
+  bg : RgbaColor?
+  fg : RgbaColor?
+}
+
+///|
 pub struct Renderer {
   context : Context
   session : OtHandle
@@ -23,6 +31,15 @@ pub struct Renderer {
   // FrameBuffer 节点：公开节点号 → 离屏缓冲（RECORD 时供录制流查表）
   framebuffers : Map[UInt32, FrameBuffer]
   mut has_hooks : Bool
+  // 选区控制器（enable_selection 启用；对应 TS renderer 的跨节点选区）
+  selectables : Array[SelectableNode]
+  mut selection_enabled : Bool
+  mut sel_active : Bool
+  mut sel_dragging : Bool
+  mut sel_anchor_x : Int
+  mut sel_anchor_y : Int
+  mut sel_touched : Array[SelectableNode]
+  mut selection_handler : ((String, Int) -> Unit raise)?
 }
 
 ///|
@@ -134,6 +151,14 @@ pub fn Renderer::create(
     paste_handler: None,
     framebuffers: Map::new(),
     has_hooks: false,
+    selectables: [],
+    selection_enabled: false,
+    sel_active: false,
+    sel_dragging: false,
+    sel_anchor_x: 0,
+    sel_anchor_y: 0,
+    sel_touched: [],
+    selection_handler: None,
   }
   if use_terminal {
     renderer.enable_raw_mode()
@@ -520,6 +545,15 @@ pub fn Renderer::run(self : Renderer) -> Unit raise {
     )
     for ev in fed.events() {
       if ev.kind() == OT_INPUT_MOUSE {
+        if self.selection_enabled {
+          let mouse = {
+            action: ev.action(),
+            button: ev.code(),
+            x: ev.x(),
+            y: ev.y(),
+          }
+          self.handle_selection_mouse(mouse)
+        }
         match self.mouse_handler {
           Some(handler) =>
             handler({
@@ -641,3 +675,177 @@ fn Renderer::disable_raw_mode(self : Renderer) -> Unit {
     let _ = tcsetattr_ffi(0, TCSANOW, self.raw_saved)
   }
 }
+
+///|
+/// 启用选区控制（对应 renderer 的跨节点鼠标选区）。启用后鼠标左键
+/// 按下/拖动/释放会驱动可选中节点的选区高亮与 selection 回调。
+pub fn Renderer::enable_selection(self : Renderer) -> Unit {
+  self.selection_enabled = true
+}
+
+///|
+/// 注册可选中节点（对应 TS 的 selectable 属性；文本节点才可选中）。
+/// bg/fg 为选区高亮色（对应 selectionBg/selectionFg），空串用节点默认。
+pub fn Renderer::add_selectable(
+  self : Renderer,
+  node : Renderable,
+  bg~ : String = "",
+  fg~ : String = "",
+) -> Unit {
+  self.selectables.push({
+    node,
+    bg: if bg == "" { None } else { Some(parse_color_lossy(bg)) },
+    fg: if fg == "" { None } else { Some(parse_color_lossy(fg)) },
+  })
+}
+
+///|
+/// 注册选区回调（对应 renderer.on("selection")）。
+/// 参数为当前选中文本与选中节点数；释放鼠标时触发。
+pub fn Renderer::on_selection(
+  self : Renderer,
+  handler : (String, Int) -> Unit raise,
+) -> Unit {
+  self.selection_handler = Some(handler)
+}
+
+///|
+/// 清除选区（对应 renderer.clearSelection()）。
+pub fn Renderer::clear_selection(self : Renderer) -> Unit raise {
+  for sel in self.sel_touched {
+    let _ = set_text_selection(
+      self.context,
+      sel.node.handle,
+      operation=OT_SCENE_TEXT_SELECTION_RESET,
+      anchor_x=0,
+      anchor_y=0,
+      focus_x=0,
+      focus_y=0,
+    )
+  }
+  self.sel_touched.clear()
+  self.sel_active = false
+  self.sel_dragging = false
+}
+
+///|
+/// 内置选区鼠标处理：左键 down 开始、drag 更新、up 结束并触发回调。
+fn Renderer::handle_selection_mouse(self : Renderer, mouse : MouseEvent) -> Unit raise {
+  if mouse.is_down() && mouse.button() == 0 {
+    // 左键按下：命中任一 selectable 才开始选区
+    for sel in self.selectables {
+      let node = sel.node
+      match get_layout(self.context, node.handle, observation=OT_LAYOUT_PAINT) {
+        Ok(layout) => {
+          let mx = mouse.x().to_double()
+          let my = mouse.y().to_double()
+          if mx >= layout.left && mx < layout.left + layout.width && my >= layout.top && my < layout.top + layout.height {
+            self.clear_selection()
+            self.sel_active = true
+            self.sel_dragging = true
+            self.sel_anchor_x = mouse.x().reinterpret_as_int()
+            self.sel_anchor_y = mouse.y().reinterpret_as_int()
+            self.apply_selection(mouse.x().reinterpret_as_int(), mouse.y().reinterpret_as_int(), is_start=true)
+            return
+          }
+        }
+        Err(_) => ()
+      }
+    }
+    return
+  }
+  if mouse.is_drag() && self.sel_dragging {
+    self.apply_selection(mouse.x().reinterpret_as_int(), mouse.y().reinterpret_as_int(), is_start=false)
+    return
+  }
+  if mouse.is_up() && self.sel_dragging {
+    self.sel_dragging = false
+    // 汇总选中文本与命中数，触发回调
+    let buf = StringBuilder(size_hint=64)
+    let mut count = 0
+    for sel in self.selectables {
+      let node = sel.node
+      match get_text_selection(self.context, node.handle) {
+        Ok(Some(_)) => {
+          count = count + 1
+          match get_selected_text(self.context, node.handle) {
+            Ok(text) => buf.write_string(text)
+            Err(_) => ()
+          }
+        }
+        _ => ()
+      }
+    }
+    match self.selection_handler {
+      Some(handler) => handler(buf.to_string(), count)
+      None => ()
+    }
+  }
+}
+
+///|
+/// 内部：把当前选区（anchor → focus）应用到全部可选中节点。
+/// 相交者设局部坐标选区（SET/UPDATE），不再相交者 RESET。
+fn Renderer::apply_selection(self : Renderer, focus_x : Int, focus_y : Int, is_start~ : Bool) -> Unit raise {
+  let ax = self.sel_anchor_x
+  let ay = self.sel_anchor_y
+  let x0 = if ax < focus_x { ax } else { focus_x }
+  let x1 = if ax < focus_x { focus_x } else { ax }
+  let y0 = if ay < focus_y { ay } else { focus_y }
+  let y1 = if ay < focus_y { focus_y } else { ay }
+  let still_touched : Array[SelectableNode] = []
+  for sel in self.selectables {
+    let node = sel.node
+    match get_layout(self.context, node.handle, observation=OT_LAYOUT_PAINT) {
+      Ok(layout) => {
+        let l = layout.left.to_int()
+        let t = layout.top.to_int()
+        let r = l + layout.width.to_int()
+        let b = t + layout.height.to_int()
+        if x1 >= l && x0 < r && y1 >= t && y0 < b {
+          let op : UInt32 = if is_start {
+            OT_SCENE_TEXT_SELECTION_SET
+          } else {
+            OT_SCENE_TEXT_SELECTION_UPDATE
+          }
+          let _ = set_text_selection(
+            self.context,
+            node.handle,
+            operation=op,
+            anchor_x=ax - l,
+            anchor_y=ay - t,
+            focus_x=focus_x - l,
+            focus_y=focus_y - t,
+            bg=sel.bg,
+            fg=sel.fg,
+          )
+          still_touched.push(sel)
+        }
+      }
+      Err(_) => ()
+    }
+  }
+  // 不再相交的节点复位
+  for old in self.sel_touched {
+    let mut keep = false
+    for cur in still_touched {
+      if old.node.num == cur.node.num {
+        keep = true
+        break
+      }
+    }
+    if !keep {
+      let _ = set_text_selection(
+        self.context,
+        old.node.handle,
+        operation=OT_SCENE_TEXT_SELECTION_RESET,
+        anchor_x=0,
+        anchor_y=0,
+        focus_x=0,
+        focus_y=0,
+      )
+    }
+  }
+  self.sel_touched = still_touched
+}
+

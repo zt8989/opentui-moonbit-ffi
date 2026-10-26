@@ -328,3 +328,39 @@ extern "C" fn ot_scene_frame_get_paint_slots(
   capacity : UInt32,
   out_count : FixedArray[UInt32],
 ) -> Int32 = "ot_scene_frame_get_paint_slots"
+
+///|
+#borrow(context, node, options, out_changed)
+extern "C" fn ot_scene_set_text_selection(
+  context : Context,
+  node : OtHandle,
+  options : TextSelectionOptions,
+  out_changed : FixedArray[UInt32],
+) -> Int32 = "ot_scene_set_text_selection"
+
+///|
+#borrow(context, node, out_packed)
+extern "C" fn ot_scene_get_text_selection(
+  context : Context,
+  node : OtHandle,
+  out_packed : FixedArray[UInt64],
+) -> Int32 = "ot_scene_get_text_selection"
+
+///|
+#borrow(context, node, bytes, out_count)
+extern "C" fn ot_scene_get_selected_text(
+  context : Context,
+  node : OtHandle,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_scene_get_selected_text"
+
+///|
+#borrow(context, node, out_layout)
+extern "C" fn ot_scene_get_layout(
+  context : Context,
+  node : OtHandle,
+  observation : UInt32,
+  out_layout : SceneLayout,
+) -> Int32 = "ot_scene_get_layout"

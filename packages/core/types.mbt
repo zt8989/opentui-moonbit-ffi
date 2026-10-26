@@ -381,3 +381,39 @@ priv struct BufferDrawCell {
   background01 : UInt32
   background23 : UInt32
 }
+
+///|
+/// C: ot_scene_text_selection_options，sizeof == 56（全 4 字节对齐成员）。
+/// anchor/focus 是相对节点原点的 cell 坐标；flags 决定 bg/fg 是否生效。
+priv struct TextSelectionOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  operation : UInt32
+  behavior : UInt32
+  anchor_x : Int32
+  anchor_y : Int32
+  focus_x : Int32
+  focus_y : Int32
+  flags : UInt32
+  reserved : UInt32
+  background01 : UInt32
+  background23 : UInt32
+  foreground01 : UInt32
+  foreground23 : UInt32
+}
+
+///|
+/// C: ot_scene_layout，sizeof == 48（layout 头 + 6 个 f32 + 2 个 f64）。
+/// out 参数：读取节点几何（OT_LAYOUT_PUBLIC/PAINT）。
+priv struct SceneLayout {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut left : Float
+  mut top : Float
+  mut right : Float
+  mut bottom : Float
+  mut width : Float
+  mut height : Float
+  mut screen_x : Double
+  mut screen_y : Double
+}

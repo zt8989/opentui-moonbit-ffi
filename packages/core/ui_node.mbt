@@ -676,3 +676,4 @@ pub fn Renderable::set_scroll(
 ) -> Unit raise {
   rethrow(set_text_scroll_direct(self.context, self.handle, x, y))
 }
+

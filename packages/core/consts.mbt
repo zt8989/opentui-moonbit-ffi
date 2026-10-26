@@ -573,3 +573,37 @@ pub const OT_BUFFER_RESPECT_ALPHA : UInt32 = 1
 pub const OT_WIDTH_METHOD_WCWIDTH : UInt32 = 0
 
 ///|
+
+///|
+/// 文本选区操作（ot_scene_text_selection_options.operation）
+pub const OT_SCENE_TEXT_SELECTION_RESET : UInt32 = 0
+
+///|
+pub const OT_SCENE_TEXT_SELECTION_SET : UInt32 = 1
+
+///|
+pub const OT_SCENE_TEXT_SELECTION_UPDATE : UInt32 = 2
+
+///|
+/// 选区行为（ot_scene_text_selection_options.behavior）
+pub const OT_SCENE_TEXT_SELECTION_CELL : UInt32 = 0
+
+///|
+pub const OT_SCENE_TEXT_SELECTION_WORD : UInt32 = 1
+
+///|
+pub const OT_SCENE_TEXT_SELECTION_LINE : UInt32 = 2
+
+///|
+/// 选区颜色位（ot_scene_text_selection_options.flags）
+pub const OT_SCENE_TEXT_SELECTION_BACKGROUND : UInt32 = 1
+
+///|
+pub const OT_SCENE_TEXT_SELECTION_FOREGROUND : UInt32 = 2
+
+///|
+/// ot_scene_get_layout 的 observation：PUBLIC=公开 cell 几何 / PAINT=绘制几何
+pub const OT_LAYOUT_PUBLIC : UInt32 = 0
+
+///|
+pub const OT_LAYOUT_PAINT : UInt32 = 2
