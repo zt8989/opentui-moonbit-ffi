@@ -1,0 +1,9 @@
+# OpenTUI 源码与构建产物（由 scripts/fetch-opentui.sh 生成）
+/vendor/
+/_build/
+*.ansi
+.DS_Store
+# 本地工具目录
+/.agents/
+/.pi/
+skills-lock.json

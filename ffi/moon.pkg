@@ -1,0 +1,5 @@
+// ffi 包配置
+
+import {
+  "moonbitlang/core/encoding/utf8",
+}
