@@ -215,3 +215,47 @@ extern "C" fn ot_scene_hit_test(
   y : Int32,
   out_num : FixedArray[UInt32],
 ) -> Int32 = "ot_scene_hit_test"
+
+///|
+// bytes 可为空负载（标题等无负载控制包）；payload 空串即零长度。
+#borrow(context, session, options, bytes)
+extern "C" fn ot_session_control(
+  context : Context,
+  session : OtHandle,
+  options : ControlOptions,
+  bytes : Bytes,
+  byte_count : UInt32,
+) -> Int32 = "ot_session_control"
+
+///|
+// title 零长度表示省略（原生侧约定：NULL 要求零长度，这里恒传缓冲）。
+#borrow(context, session, message, title, out_written)
+extern "C" fn ot_session_notification(
+  context : Context,
+  session : OtHandle,
+  message : Bytes,
+  message_len : UInt32,
+  title : Bytes,
+  title_len : UInt32,
+  out_written : FixedArray[UInt32],
+) -> Int32 = "ot_session_notification"
+
+///|
+#borrow(context, session, out_link_id)
+extern "C" fn ot_session_get_link_id(
+  context : Context,
+  session : OtHandle,
+  x : Int32,
+  y : Int32,
+  out_link_id : FixedArray[UInt32],
+) -> Int32 = "ot_session_get_link_id"
+
+///|
+#borrow(context, bytes, out_count)
+extern "C" fn ot_context_get_link_url(
+  context : Context,
+  link_id : UInt32,
+  bytes : FixedArray[Byte],
+  capacity : UInt32,
+  out_count : FixedArray[UInt32],
+) -> Int32 = "ot_context_get_link_url"

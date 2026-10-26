@@ -1,7 +1,17 @@
 ///|
 test "encode_styled_chunk 字节布局与 C 一致" {
   let buf : FixedArray[Byte] = FixedArray::make(48, 0)
-  encode_styled_chunk(buf, 0, 7, 0x3, (255, 0, 0, 255), (0, 0, 255, 255), 0)
+  encode_styled_chunk(
+    buf,
+    0,
+    7,
+    0x3,
+    (255, 0, 0, 255),
+    (0, 0, 255, 255),
+    0,
+    0,
+    0,
+  )
   let u32_at = fn(off : Int32) -> UInt32 {
     buf[off].to_uint() |
     (buf[off + 1].to_uint() << 8) |

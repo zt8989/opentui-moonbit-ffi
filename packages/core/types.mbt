@@ -268,3 +268,14 @@ priv struct SliderOptions {
 ///|
 /// StyledChunk / SliderOptions 的 out 容器不适用（它们是输入记录，
 /// 由字节缓冲编码），这里提供解析结果不需要；输入记录用 builder 编码。
+
+///|
+/// C: ot_session_control_options，sizeof == 20。kind 取 OT_CONTROL_*，
+/// argument 仅 MOUSE 用（0/1/2 = 禁用/拖动/全移动），其余必须为 0。
+priv struct ControlOptions {
+  struct_size : UInt32
+  abi_version : UInt32
+  kind : UInt32
+  argument : UInt32
+  reserved : UInt32
+}

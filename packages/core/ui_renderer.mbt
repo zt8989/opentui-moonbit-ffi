@@ -18,6 +18,8 @@ pub struct Renderer {
   mut key_handler : ((@keymap.KeyStroke) -> Unit raise)?
   mut use_mouse : Bool
   mut mouse_handler : ((MouseEvent) -> Unit raise)?
+  mut focus_handler : ((Bool) -> Unit raise)?
+  mut paste_handler : ((String) -> Unit raise)?
 }
 
 ///|
@@ -124,6 +126,8 @@ pub fn Renderer::create(
     key_handler: None,
     use_mouse: false,
     mouse_handler: None,
+    focus_handler: None,
+    paste_handler: None,
   }
   if use_terminal {
     renderer.enable_raw_mode()
@@ -290,6 +294,84 @@ pub fn Renderer::on_mouse(
 }
 
 ///|
+/// 注册焦点回调（终端焦点报告，对应 renderer 的 focus/blur 事件）。
+pub fn Renderer::on_focus(
+  self : Renderer,
+  handler : (Bool) -> Unit raise,
+) -> Unit {
+  self.focus_handler = Some(handler)
+}
+
+///|
+/// 注册粘贴回调（对应 renderer 的 paste 事件）。
+pub fn Renderer::on_paste(
+  self : Renderer,
+  handler : (String) -> Unit raise,
+) -> Unit {
+  self.paste_handler = Some(handler)
+}
+
+///|
+/// 设置终端窗口标题（对应 renderer.setTerminalTitle，OSC 控制包）。
+pub fn Renderer::set_terminal_title(
+  self : Renderer,
+  title : String,
+) -> Unit raise {
+  let _ = unwrap(
+    send_control(
+      self.context,
+      self.session,
+      kind=OT_CONTROL_TITLE,
+      payload=title,
+    ),
+  )
+}
+
+///|
+/// 上报程序状态（对应 renderer.setProgramStatus，OSC 7501）。
+pub fn Renderer::report_program_status(
+  self : Renderer,
+  report : ProgramStatusReport,
+) -> Unit raise {
+  let _ = unwrap(report_program_status(self.context, self.session, report))
+}
+
+///|
+/// 发送终端通知（对应 renderer.triggerNotification）。
+/// 返回 false 表示终端不支持或输出被拒。
+pub fn Renderer::notify(
+  self : Renderer,
+  message~ : String,
+  title~ : String = "",
+) -> Bool raise {
+  unwrap(trigger_notification(self.context, self.session, message~, title~)) > 0
+}
+
+///|
+/// 启用鼠标全移动上报（对应 enableMouseMovement，控制包 OT_CONTROL_MOUSE
+/// argument=2）。paint 的 use_mouse 只发布命中列表；运动事件靠这个开关。
+pub fn Renderer::enable_mouse_motion(self : Renderer) -> Unit raise {
+  self.use_mouse = true
+  let _ = unwrap(
+    send_control(self.context, self.session, kind=OT_CONTROL_MOUSE, argument=2),
+  )
+}
+
+///|
+/// (x, y) 处的链接 URL（无链接返回 None）。需要先渲染过带链接的帧。
+pub fn Renderer::link_url_at(
+  self : Renderer,
+  x : UInt32,
+  y : UInt32,
+) -> String? raise {
+  let id = unwrap(link_id_at(self.context, self.session, x, y))
+  if id == 0 {
+    return None
+  }
+  Some(unwrap(link_url(self.context, id)))
+}
+
+///|
 /// 阻塞交互循环（对应 renderer 的事件循环）：泵送终端工作、阻塞读
 /// stdin、解析按键并回调 on_key，直到 stop() 或 stdin EOF。
 /// use_terminal=false 时读到 EOF 即返回。
@@ -330,6 +412,20 @@ pub fn Renderer::run(self : Renderer) -> Unit raise {
               x: ev.x(),
               y: ev.y(),
             })
+          None => ()
+        }
+        continue
+      }
+      if ev.kind() == OT_INPUT_FOCUS {
+        match self.focus_handler {
+          Some(handler) => handler(ev.action() == OT_INPUT_FOCUS_IN)
+          None => ()
+        }
+        continue
+      }
+      if ev.kind() == OT_INPUT_PASTE {
+        match self.paste_handler {
+          Some(handler) => handler(ev.text())
           None => ()
         }
         continue

@@ -2,7 +2,7 @@
 
 用 [MoonBit](https://www.moonbitlang.com) 的 C ABI FFI 直接驱动
 [OpenTUI](https://opentui.com/docs/) 原生渲染器，全程无 JavaScript 运行时。
-包含两个示例与一个移植的按键绑定库：
+包含 core 绑定包、移植的按键绑定库与一组可执行示例：
 
 - **hello**：对应官方文档 *Native rendering → C* 指南。构建
   `root → box → label` 场景树，渲染 `Hello` 写入 `hello.ansi`，再把同一棵树
@@ -50,7 +50,19 @@
 │       ├── nested-zindex/      # z-index 叠放轮转（z 键）
 │       ├── opacity/            # 四层透明度切换（1-4 键）
 │       ├── text-wrap/          # 换行模式 none/char/word（w 键）
-│       └── text-truncation/    # 截断开关（t 键）
+│       ├── text-truncation/    # 截断开关（t 键）
+│       ├── select-demo/        # keymap 重建的选中列表（j/k/enter）
+│       ├── tab-select-demo/    # 标签条切换（h/l 或 ←/→）
+│       ├── styled-text-demo/   # 富文本混排（多 chunk 颜色/属性）
+│       ├── slider-demo/        # slider 节点（←/→ ±1、↑/↓ ±10）
+│       ├── mouse-interaction-demo/ # 点击/拖动色块 + 命中测试
+│       ├── scroll-example/     # 文本滚动（方向键/PageUp/PageDown）
+│       ├── terminal-title/     # OSC 终端标题（1/2/3/空格切换）
+│       ├── program-status-demo/ # OSC 7501 程序状态上报（1-6 键）
+│       ├── notification-demo/  # 终端通知（1-6 键触发）
+│       ├── focus-restore-demo/ # 鼠标全移动 + 焦点事件计数
+│       ├── link-demo/          # 富文本超链接 + 点击解析 URL
+│       └── keypress-debug-demo/ # 按键/粘贴事件日志与详情
 ├── scripts/fetch-opentui.sh    # 克隆并构建 OpenTUI 原生库
 └── vendor/dist/<target>/       # opentui.h + libopentui（git 忽略，脚本生成）
 ```
@@ -70,8 +82,8 @@ macOS 可 `brew install zig@0.16`）、C 编译器。
 scripts/fetch-opentui.sh
 
 # 2. 运行示例
-moon run cmd/main --release          # hello：渲染两帧到 .ansi 文件
-moon run cmd/keymap-demo --release   # 交互式 TUI（需要真实终端）
+moon run packages/examples/hello --release          # 渲染两帧到 .ansi 文件
+moon run packages/examples/keymap-demo --release    # 交互式 TUI（需要真实终端）
 
 # 3. 测试与格式化
 moon test --target native

@@ -461,3 +461,56 @@ pub const OT_INPUT_MOUSE : UInt32 = 2
 pub const OT_INPUT_PASTE : UInt32 = 3
 
 ///|
+pub const OT_INPUT_FOCUS : UInt32 = 4
+
+///|
+/// 焦点事件 action（OT_INPUT_FOCUS）
+pub const OT_INPUT_FOCUS_OUT : UInt32 = 0
+
+///|
+pub const OT_INPUT_FOCUS_IN : UInt32 = 1
+
+///|
+/// 控制包 kind（ot_session_control_options.kind）
+pub const OT_CONTROL_TITLE : UInt32 = 2
+
+///|
+pub const OT_CONTROL_MOUSE : UInt32 = 3
+
+///|
+pub const OT_CONTROL_PROGRAM_STATUS : UInt32 = 11
+
+///|
+/// OSC 7501 Program Status 的 state（ot_session_program_status.state）
+pub const OT_PROGRAM_STATE_IDLE : UInt32 = 1
+
+///|
+pub const OT_PROGRAM_STATE_WORKING : UInt32 = 2
+
+///|
+pub const OT_PROGRAM_STATE_DONE : UInt32 = 3
+
+///|
+pub const OT_PROGRAM_STATE_BLOCKED : UInt32 = 4
+
+///|
+pub const OT_PROGRAM_STATE_ERROR : UInt32 = 5
+
+///|
+pub const OT_PROGRAM_STATE_CLEAR : UInt32 = 6
+
+///|
+/// BLOCKED 状态的 kind（ot_session_program_status.kind）
+pub const OT_PROGRAM_KIND_PERMISSION : UInt32 = 1
+
+///|
+pub const OT_PROGRAM_KIND_QUESTION : UInt32 = 2
+
+///|
+pub const OT_PROGRAM_KIND_AUTH : UInt32 = 3
+
+///|
+/// fields 位：progress 有效（0..100，需 WORKING/BLOCKED）
+pub const OT_PROGRAM_STATUS_PROGRESS : UInt32 = 1
+
+///|

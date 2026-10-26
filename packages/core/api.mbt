@@ -825,3 +825,220 @@ pub fn set_text_scroll_direct(
   }
   set_text_options(context, node, options)
 }
+
+///|
+/// 发送控制包（标题 / 鼠标模式 / 程序状态等，kind 取 OT_CONTROL_*）。
+/// payload 为 UTF-8 负载（TITLE 用）；产生的输出由 pump/drain 交付。
+pub fn send_control(
+  context : Context,
+  session : OtHandle,
+  kind~ : UInt32,
+  argument~ : UInt32 = 0,
+  payload~ : String = "",
+) -> Result[Unit, NativeError] {
+  let bytes = @utf8.encode(payload)
+  let options : ControlOptions = {
+    struct_size: 20,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    kind,
+    argument,
+    reserved: 0,
+  }
+  check(
+    "ot_session_control",
+    ot_session_control(
+      context,
+      session,
+      options,
+      bytes,
+      bytes.length().reinterpret_as_uint(),
+    ),
+  )
+}
+
+///|
+/// 一次 OSC 7501 程序状态报告（对应 TS 的 ProgramStatus）。
+/// state 取 OT_PROGRAM_STATE_*；blocked_kind 仅 BLOCKED 时有效（取 OT_PROGRAM_KIND_*，
+/// 0 表示不带 kind）；progress 仅在 progress=true 且 0..100 时随报告发送；
+/// id 空串表示根记录；app/title/message 可选。
+pub struct ProgramStatusReport {
+  state : UInt32
+  blocked_kind : UInt32
+  progress : Bool
+  progress_value : UInt32
+  id : String
+  app : String
+  title : String
+  message : String
+}
+
+///|
+pub fn ProgramStatusReport::make(
+  state~ : UInt32,
+  blocked_kind~ : UInt32 = 0,
+  progress~ : Bool = false,
+  progress_value~ : UInt32 = 0,
+  id~ : String = "",
+  app~ : String = "",
+  title~ : String = "",
+  message~ : String = "",
+) -> ProgramStatusReport raise {
+  if progress && progress_value > 100 {
+    raise Failure("progress must be 0..100")
+  }
+  { state, blocked_kind, progress, progress_value, id, app, title, message, }
+}
+
+///|
+/// 发送程序状态报告（对应 renderer.setProgramStatus，OSC 7501）。
+/// payload = ot_session_program_status（8 个 uint32，无版本化头）
+/// + id/app/title/message 的 UTF-8 字节依次相连。
+pub fn report_program_status(
+  context : Context,
+  session : OtHandle,
+  report : ProgramStatusReport,
+) -> Result[Unit, NativeError] {
+  let id = @utf8.encode(report.id)
+  let app = @utf8.encode(report.app)
+  let title = @utf8.encode(report.title)
+  let message = @utf8.encode(report.message)
+  let fields : UInt32 = if report.progress {
+    OT_PROGRAM_STATUS_PROGRESS
+  } else {
+    0
+  }
+  let total = 32 +
+    id.length() +
+    app.length() +
+    title.length() +
+    message.length()
+  let buf : FixedArray[Byte] = FixedArray::make(
+    if total > 0 {
+      total
+    } else {
+      1
+    },
+    0,
+  )
+  let put32 = fn(off : Int32, v : UInt32) -> Unit {
+    for i in 0..<4 {
+      buf[off + i] = ((v >> (i * 8)) & 0xff).reinterpret_as_int().to_byte()
+    }
+  }
+  // 字段偏移：0=state 4=kind 8=fields 12=progress 16=id_len 20=app_len 24=title_len 28=message_len
+  put32(0, report.state)
+  put32(
+    4,
+    if report.state == OT_PROGRAM_STATE_BLOCKED {
+      report.blocked_kind
+    } else {
+      0
+    },
+  )
+  put32(8, fields)
+  put32(
+    12,
+    if fields == OT_PROGRAM_STATUS_PROGRESS {
+      report.progress_value
+    } else {
+      0
+    },
+  )
+  put32(16, id.length().reinterpret_as_uint())
+  put32(20, app.length().reinterpret_as_uint())
+  put32(24, title.length().reinterpret_as_uint())
+  put32(28, message.length().reinterpret_as_uint())
+  let mut offset = 32
+  for bytes in [id, app, title, message] {
+    for i in 0..<bytes.length() {
+      buf[offset + i] = bytes[i]
+    }
+    offset += bytes.length()
+  }
+  let options : ControlOptions = {
+    struct_size: 20,
+    abi_version: OT_CONTEXT_ABI_VERSION,
+    kind: OT_CONTROL_PROGRAM_STATUS,
+    argument: 0,
+    reserved: 0,
+  }
+  // ot_session_control 接收不可变 Bytes：把编码好的负载转过去
+  let payload = Bytes::from_array(buf[:total])
+  check(
+    "ot_session_control",
+    ot_session_control(
+      context,
+      session,
+      options,
+      payload,
+      payload.length().reinterpret_as_uint(),
+    ),
+  )
+}
+
+///|
+/// 发送终端通知（对应 renderer.triggerNotification）。title 空串表示省略。
+/// 返回写入的输出字节数（0 表示终端不支持或输出被拒）。
+pub fn trigger_notification(
+  context : Context,
+  session : OtHandle,
+  message~ : String,
+  title~ : String = "",
+) -> Result[UInt32, NativeError] {
+  let msg = @utf8.encode(message)
+  let ttl = @utf8.encode(title)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_session_notification(
+    context,
+    session,
+    msg,
+    msg.length().reinterpret_as_uint(),
+    ttl,
+    ttl.length().reinterpret_as_uint(),
+    out,
+  )
+  match check("ot_session_notification", status) {
+    Ok(_) => Ok(out[0])
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 命中 (x, y) 处的链接 ID（无链接返回 0）。需要先渲染过带链接的帧。
+pub fn link_id_at(
+  context : Context,
+  session : OtHandle,
+  x : UInt32,
+  y : UInt32,
+) -> Result[UInt32, NativeError] {
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_session_get_link_id(
+    context,
+    session,
+    x.reinterpret_as_int(),
+    y.reinterpret_as_int(),
+    out,
+  )
+  match check("ot_session_get_link_id", status) {
+    Ok(_) => Ok(out[0])
+    Err(e) => Err(e)
+  }
+}
+
+///|
+/// 读取链接 ID 对应的 URL（链接 ID 由 link_id_at 返回，Context 内局部有效）。
+pub fn link_url(
+  context : Context,
+  link_id : UInt32,
+) -> Result[String, NativeError] {
+  let buf : FixedArray[Byte] = FixedArray::make(512, 0)
+  let out : FixedArray[UInt32] = FixedArray::make(1, 0)
+  let status = ot_context_get_link_url(context, link_id, buf, 512, out)
+  match check("ot_context_get_link_url", status) {
+    Ok(_) => {
+      let n = out[0].reinterpret_as_int()
+      Ok(@utf8.decode_lossy(Bytes::from_array(buf[:n]).exact_view()))
+    }
+    Err(e) => Err(e)
+  }
+}

@@ -2,11 +2,13 @@
 
 ///|
 /// 一段富文本：内容 + 颜色 + 属性位（对应 TS 的 StyledText chunk）。
+/// url 非空时该段是超链接（对应 TS 的 link(url)(text)）。
 pub struct Chunk {
   text : String
   fg : String
   bg : String
   attributes : UInt32
+  url : String
 }
 
 ///|
@@ -15,8 +17,9 @@ pub fn Chunk::make(
   fg~ : String = "inherit",
   bg~ : String = "transparent",
   attributes~ : UInt32 = 0,
+  url~ : String = "",
 ) -> Chunk {
-  { text, fg, bg, attributes, }
+  { text, fg, bg, attributes, url, }
 }
 
 ///|
@@ -29,6 +32,8 @@ fn encode_styled_chunk(
   fg : RgbaColor,
   bg : RgbaColor,
   attributes : UInt32,
+  link_offset : UInt32,
+  link_byte_count : UInt32,
 ) -> Unit {
   let put32 = fn(off : Int32, v : UInt32) -> Unit {
     for i in 0..<4 {
@@ -47,8 +52,8 @@ fn encode_styled_chunk(
   put32(28, pack_u16x2(bg.2, bg.3))
   put32(32, attributes)
   put32(36, 0)
-  put32(40, 0)
-  put32(44, 0)
+  put32(40, link_offset)
+  put32(44, link_byte_count)
 }
 
 ///|
@@ -59,7 +64,10 @@ pub fn Renderable::set_styled_chunks(
   chunks : Array[Chunk],
 ) -> Unit raise {
   let mut total_bytes = 0
-  let encoded : Array[(Bytes, RgbaColor, RgbaColor, UInt32, UInt32, UInt32)] = []
+  let mut url_bytes = 0
+  let encoded : Array[
+    (Bytes, RgbaColor, RgbaColor, UInt32, UInt32, UInt32, UInt32, UInt32),
+  ] = []
   for chunk in chunks {
     let bytes = @utf8.encode(chunk.text)
     let len = bytes.length().reinterpret_as_uint()
@@ -74,14 +82,25 @@ pub fn Renderable::set_styled_chunks(
       parse_color_lossy(chunk.bg)
     }
     // flags 只接受 FOREGROUND/BACKGROUND/LINK；attributes 走独立字段（bits 0..7）
-    let flags = OT_SCENE_TEXT_FOREGROUND.lor(
+    let mut flags = OT_SCENE_TEXT_FOREGROUND.lor(
       if bg.3 > 0 {
         OT_SCENE_TEXT_BACKGROUND
       } else {
         0
       },
     )
-    encoded.push((bytes, fg, bg, flags, chunk.attributes, len))
+    // url 表是所有 URL 字节的连续拼接，chunk 记录自己的区间
+    let mut link_offset : UInt32 = 0
+    let mut link_len : UInt32 = 0
+    if chunk.url != "" {
+      flags = flags.lor(OT_SCENE_TEXT_LINK)
+      link_offset = url_bytes.reinterpret_as_uint()
+      link_len = @utf8.encode(chunk.url).length().reinterpret_as_uint()
+      url_bytes += link_len.reinterpret_as_int()
+    }
+    encoded.push(
+      (bytes, fg, bg, flags, chunk.attributes, len, link_offset, link_len),
+    )
     total_bytes += len.reinterpret_as_int()
   }
   let content : FixedArray[Byte] = FixedArray::make(
@@ -93,15 +112,41 @@ pub fn Renderable::set_styled_chunks(
     0,
   )
   let chunk_buf : FixedArray[Byte] = FixedArray::make(encoded.length() * 48, 0)
+  let url_buf : FixedArray[Byte] = FixedArray::make(
+    if url_bytes > 0 {
+      url_bytes
+    } else {
+      1
+    },
+    0,
+  )
   let mut offset = 0
+  let mut url_offset = 0
   for i, item in encoded {
-    let (bytes, fg, bg, flags, attrs, len) = item
+    let (bytes, fg, bg, flags, attrs, len, link_off, link_len) = item
     let n = len.reinterpret_as_int()
     for j in 0..<n {
       content[offset + j] = bytes[j]
     }
-    encode_styled_chunk(chunk_buf, i * 48, len, flags, fg, bg, attrs)
+    if link_len > 0 {
+      let url = @utf8.encode(chunks[i].url)
+      for j in 0..<url.length() {
+        url_buf[url_offset + j] = url[j]
+      }
+    }
+    encode_styled_chunk(
+      chunk_buf,
+      i * 48,
+      len,
+      flags,
+      fg,
+      bg,
+      attrs,
+      link_off,
+      link_len,
+    )
     offset += n
+    url_offset += link_len.reinterpret_as_int()
   }
   self.content = {
     let buf = StringBuilder(size_hint=total_bytes)
@@ -117,8 +162,8 @@ pub fn Renderable::set_styled_chunks(
     total_bytes.reinterpret_as_uint(),
     chunk_buf,
     encoded.length().reinterpret_as_uint(),
-    FixedArray::make(1, 0),
-    0,
+    url_buf,
+    url_bytes.reinterpret_as_uint(),
   )
   rethrow(check("ot_scene_set_styled_text", status))
 }
@@ -145,6 +190,11 @@ pub fn MouseEvent::is_up(self : MouseEvent) -> Bool {
 ///|
 pub fn MouseEvent::is_drag(self : MouseEvent) -> Bool {
   self.action == OT_INPUT_MOUSE_DRAG
+}
+
+///|
+pub fn MouseEvent::is_move(self : MouseEvent) -> Bool {
+  self.action == OT_INPUT_MOUSE_MOVE
 }
 
 ///|
