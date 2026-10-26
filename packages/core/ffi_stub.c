@@ -425,3 +425,15 @@ int32_t ot_editor_view_get_lines_shim(ot_context *context,
   out_pairs[1] = measure.width_cols_max;
   return status;
 }
+
+// ot_scene_set_image 的 buffer 参数固定 NULL（非缓冲绘制路径）。
+extern int32_t ot_scene_set_image(ot_context *context, const ot_handle *node,
+                                 const ot_handle *image, uint32_t fit,
+                                 uint32_t protocol, const ot_handle *buffer);
+
+int32_t ot_scene_set_image_null_buffer(ot_context *context,
+                                       const ot_handle *node,
+                                       const ot_handle *image, uint32_t fit,
+                                       uint32_t protocol) {
+  return ot_scene_set_image(context, node, image, fit, protocol, 0);
+}

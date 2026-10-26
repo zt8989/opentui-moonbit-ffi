@@ -1028,3 +1028,211 @@ extern "C" fn ot_edit_buffer_get_highlights(
   capacity : UInt32,
   out_count : FixedArray[UInt32],
 ) -> Int32 = "ot_edit_buffer_get_highlights"
+
+///|
+// 图像：像素缓冲用 FixedArray[Byte] 直传（原生只读/只写不持有）。
+#borrow(context, bytes, out_info)
+extern "C" fn ot_image_inspect(
+  context : Context,
+  bytes : FixedArray[Byte],
+  byte_count : UInt64,
+  out_info : ImageInfo,
+) -> Int32 = "ot_image_inspect"
+
+///|
+#borrow(context, bytes, out_image)
+extern "C" fn ot_image_decode(
+  context : Context,
+  bytes : FixedArray[Byte],
+  byte_count : UInt64,
+  out_image : HandleOut,
+) -> Int32 = "ot_image_decode"
+
+///|
+#borrow(context, pixels, out_image)
+extern "C" fn ot_image_create_pixels(
+  context : Context,
+  pixels : FixedArray[Byte],
+  byte_count : UInt64,
+  width : UInt32,
+  height : UInt32,
+  stride : UInt32,
+  format : UInt32,
+  alpha : UInt32,
+  out_image : HandleOut,
+) -> Int32 = "ot_image_create_pixels"
+
+///|
+#borrow(context, image, pixels)
+extern "C" fn ot_image_update_pixels(
+  context : Context,
+  image : OtHandle,
+  pixels : FixedArray[Byte],
+  byte_count : UInt64,
+  stride : UInt32,
+  format : UInt32,
+  alpha : UInt32,
+) -> Int32 = "ot_image_update_pixels"
+
+///|
+#borrow(image)
+extern "C" fn ot_image_destroy(context : Context, image : OtHandle) -> Int32 = "ot_image_destroy"
+
+///|
+#borrow(context, image, out_info)
+extern "C" fn ot_image_get_info(
+  context : Context,
+  image : OtHandle,
+  out_info : ImageInfo,
+) -> Int32 = "ot_image_get_info"
+
+///|
+#borrow(context, image, out_image)
+extern "C" fn ot_image_resize(
+  context : Context,
+  image : OtHandle,
+  width : UInt32,
+  height : UInt32,
+  filter : UInt32,
+  out_image : HandleOut,
+) -> Int32 = "ot_image_resize"
+
+///|
+#borrow(context, image, out_image)
+extern "C" fn ot_image_extract(
+  context : Context,
+  image : OtHandle,
+  left : UInt32,
+  top : UInt32,
+  width : UInt32,
+  height : UInt32,
+  out_image : HandleOut,
+) -> Int32 = "ot_image_extract"
+
+///|
+#borrow(context, image, background, out_image)
+extern "C" fn ot_image_extend(
+  context : Context,
+  image : OtHandle,
+  top : UInt32,
+  right : UInt32,
+  bottom : UInt32,
+  left : UInt32,
+  background : FixedArray[Byte],
+  out_image : HandleOut,
+) -> Int32 = "ot_image_extend"
+
+///|
+#borrow(context, image, out_image)
+extern "C" fn ot_image_transform(
+  context : Context,
+  image : OtHandle,
+  operation : UInt32,
+  out_image : HandleOut,
+) -> Int32 = "ot_image_transform"
+
+///|
+#borrow(context, base, overlay, out_image)
+extern "C" fn ot_image_composite(
+  context : Context,
+  base : OtHandle,
+  overlay : OtHandle,
+  left : Int32,
+  top : Int32,
+  blend : UInt32,
+  opacity : Byte,
+  out_image : HandleOut,
+) -> Int32 = "ot_image_composite"
+
+///|
+#borrow(context, image, destination)
+extern "C" fn ot_image_copy_pixels(
+  context : Context,
+  image : OtHandle,
+  destination : FixedArray[Byte],
+  byte_count : UInt64,
+  stride : UInt32,
+  format : UInt32,
+) -> Int32 = "ot_image_copy_pixels"
+
+///|
+#borrow(context, image, destination, out_byte_count)
+extern "C" fn ot_image_copy_png(
+  context : Context,
+  image : OtHandle,
+  destination : FixedArray[Byte],
+  capacity : UInt64,
+  out_byte_count : FixedArray[UInt64],
+) -> Int32 = "ot_image_copy_png"
+
+///|
+// IMAGE 节点绑定：buffer 参数固定 NULL（非缓冲绘制路径）。
+#borrow(context, node, image)
+extern "C" fn ot_scene_set_image_shim(
+  context : Context,
+  node : OtHandle,
+  image : OtHandle,
+  fit : UInt32,
+  protocol : UInt32,
+) -> Int32 = "ot_scene_set_image_null_buffer"
+
+///|
+#borrow(context, session)
+extern "C" fn ot_session_set_image_resolution(
+  context : Context,
+  session : OtHandle,
+  terminal_width : UInt32,
+  terminal_height : UInt32,
+  pixel_width : UInt32,
+  pixel_height : UInt32,
+) -> Int32 = "ot_session_set_image_resolution"
+
+///|
+#borrow(context, session)
+extern "C" fn ot_session_set_kitty_image_transport(
+  context : Context,
+  session : OtHandle,
+  mode : UInt32,
+) -> Int32 = "ot_session_set_kitty_image_transport"
+
+///|
+#borrow(context, session, out_status)
+extern "C" fn ot_session_get_kitty_image_transport(
+  context : Context,
+  session : OtHandle,
+  out_status : KittyTransportStatus,
+) -> Int32 = "ot_session_get_kitty_image_transport"
+
+///|
+#borrow(context, session, out_retry)
+extern "C" fn ot_session_poll_kitty_image_transport(
+  context : Context,
+  session : OtHandle,
+  now_ns : UInt64,
+  out_retry : FixedArray[UInt32],
+) -> Int32 = "ot_session_poll_kitty_image_transport"
+
+///|
+#borrow(context, session)
+extern "C" fn ot_session_cancel_kitty_image_transport(
+  context : Context,
+  session : OtHandle,
+  failed : UInt32,
+) -> Int32 = "ot_session_cancel_kitty_image_transport"
+
+///|
+#borrow(context, session, bytes, out_result)
+extern "C" fn ot_session_process_kitty_image_reply(
+  context : Context,
+  session : OtHandle,
+  bytes : FixedArray[Byte],
+  byte_count : UInt32,
+  out_result : FixedArray[UInt32],
+) -> Int32 = "ot_session_process_kitty_image_reply"
+
+///|
+#borrow(context, session)
+extern "C" fn ot_session_start_kitty_file_probe(
+  context : Context,
+  session : OtHandle,
+) -> Int32 = "ot_session_start_kitty_file_probe"

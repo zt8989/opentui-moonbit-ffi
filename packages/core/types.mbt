@@ -558,3 +558,29 @@ priv struct Rgba16 {
   c01 : UInt32
   c23 : UInt32
 }
+
+///|
+/// C: ot_image_info，sizeof == 32（8×u32）。out 记录。
+priv struct ImageInfo {
+  mut width : UInt32
+  mut height : UInt32
+  mut source_width : UInt32
+  mut source_height : UInt32
+  mut format : UInt32
+  mut color_status : UInt32
+  mut orientation : UInt32
+  mut has_alpha : UInt32
+}
+
+///|
+/// C: ot_session_kitty_image_transport，sizeof == 32（8×u32）。out 记录。
+priv struct KittyTransportStatus {
+  mut struct_size : UInt32
+  mut abi_version : UInt32
+  mut requested : UInt32
+  mut effective : UInt32
+  mut file_state : UInt32
+  mut fallback : UInt32
+  mut pending_files : UInt32
+  mut pending_bytes : UInt32
+}

@@ -382,6 +382,7 @@ fn next_node(
     CustomNode => OT_SCENE_CUSTOM
     EditorNode => OT_SCENE_EDITOR
     TextViewNode => OT_SCENE_TEXT_VIEW
+    ImageNode => OT_SCENE_IMAGE
   }
   unwrap(create_node(context, session, ot_kind, num~))
 }

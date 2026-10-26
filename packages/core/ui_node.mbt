@@ -11,6 +11,7 @@ pub enum NodeKind {
   CustomNode
   EditorNode
   TextViewNode
+  ImageNode
 }
 
 ///|

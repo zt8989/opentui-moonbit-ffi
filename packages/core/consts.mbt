@@ -748,3 +748,83 @@ pub const OT_EDITOR_STYLE_ATTRIBUTES : UInt32 = 4
 ///|
 /// 终端剪贴板 target（ot_session_clipboard）：0=clipboard
 pub const OT_CLIPBOARD_TARGET_CLIPBOARD : UInt32 = 0
+
+///|
+/// 图像适配模式（ot_scene_set_image 的 fit）
+pub const OT_IMAGE_FIT : UInt32 = 0
+
+///|
+pub const OT_IMAGE_COVER : UInt32 = 1
+
+///|
+pub const OT_IMAGE_FILL : UInt32 = 2
+
+///|
+/// 图像渲染协议（ot_scene_set_image / draw 的 protocol）
+pub const OT_IMAGE_PROTOCOL_AUTO : UInt32 = 0
+
+///|
+pub const OT_IMAGE_PROTOCOL_KITTY : UInt32 = 1
+
+///|
+pub const OT_IMAGE_PROTOCOL_SIXEL : UInt32 = 2
+
+///|
+pub const OT_IMAGE_PROTOCOL_BLOCKS : UInt32 = 3
+
+///|
+/// 像素格式（ot_image_create_pixels / copy_pixels）
+pub const OT_IMAGE_FORMAT_RGBA8 : UInt32 = 0
+
+///|
+pub const OT_IMAGE_FORMAT_BGRA8 : UInt32 = 1
+
+///|
+/// alpha 语义
+pub const OT_IMAGE_ALPHA_STRAIGHT : UInt32 = 0
+
+///|
+pub const OT_IMAGE_ALPHA_OPAQUE : UInt32 = 1
+
+///|
+/// 缩放滤波
+pub const OT_IMAGE_FILTER_DEFAULT : UInt32 = 0
+
+///|
+pub const OT_IMAGE_FILTER_NEAREST : UInt32 = 6
+
+///|
+/// 旋转/翻转操作（ot_image_transform）
+pub const OT_IMAGE_ROTATE_90 : UInt32 = 0
+
+///|
+pub const OT_IMAGE_ROTATE_180 : UInt32 = 1
+
+///|
+pub const OT_IMAGE_ROTATE_270 : UInt32 = 2
+
+///|
+pub const OT_IMAGE_FLIP : UInt32 = 3
+
+///|
+pub const OT_IMAGE_FLOP : UInt32 = 4
+
+///|
+/// 混合模式（ot_image_composite）
+pub const OT_IMAGE_BLEND_SOURCE_OVER : UInt32 = 0
+
+///|
+pub const OT_IMAGE_BLEND_SOURCE : UInt32 = 1
+
+///|
+pub const OT_IMAGE_BLEND_DESTINATION_OVER : UInt32 = 2
+
+///|
+/// Kitty 图像传输模式（requested）
+pub const OT_KITTY_TRANSPORT_RAW : UInt32 = 0
+
+///|
+pub const OT_KITTY_TRANSPORT_ZLIB : UInt32 = 1
+
+///|
+pub const OT_KITTY_TRANSPORT_FILE : UInt32 = 2
