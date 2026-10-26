@@ -608,3 +608,96 @@ int32_t ot_buffer_draw_unicode_offscreen(
   return ot_buffer_draw_unicode(context, buffer, 0, unicode, index, x, y, fg,
                                 bg, attributes);
 }
+
+
+// 剪贴板异步服务：u8 返回转 u32 的 shim。
+extern uint8_t ot_clipboard_service_create(ot_context *context,
+                                           uint32_t max_operations,
+                                           uint32_t max_provider_transfers,
+                                           const uint8_t *wayland_seat,
+                                           uint32_t wayland_seat_length);
+extern uint8_t ot_clipboard_service_drain(ot_context *context);
+extern uint8_t ot_clipboard_service_destroy(ot_context *context);
+extern uint8_t ot_clipboard_read_operation_start(
+    ot_context *context, const uint8_t *request, uint32_t request_length,
+    uint8_t selection, uint32_t max_bytes, uint32_t max_image_pixels,
+    uint32_t max_conversion_bytes, uint32_t timeout_ms, ot_handle *out_operation);
+extern uint8_t ot_clipboard_write_operation_start(
+    ot_context *context, const uint8_t *text, uint32_t text_length,
+    uint8_t selection, uint32_t timeout_ms, ot_handle *out_operation);
+extern uint8_t ot_clipboard_operation_poll(ot_context *context,
+                                           const ot_handle *operation);
+extern uint8_t ot_clipboard_operation_result_data_length(
+    ot_context *context, const ot_handle *operation, uint32_t *out_length);
+extern uint8_t ot_clipboard_operation_result_data_copy(ot_context *context,
+                                                       const ot_handle *operation,
+                                                       uint8_t *out_bytes,
+                                                       uint32_t capacity);
+extern uint8_t ot_clipboard_operation_result_error_code(ot_context *context,
+                                                        const ot_handle *operation,
+                                                        uint32_t *out_error_code);
+extern uint8_t ot_clipboard_operation_destroy(ot_context *context,
+                                              const ot_handle *operation);
+
+uint32_t ot_clipboard_service_create_shim(ot_context *context,
+                                          uint32_t max_operations,
+                                          uint32_t max_provider_transfers) {
+  return ot_clipboard_service_create(context, max_operations,
+                                     max_provider_transfers, 0, 0);
+}
+
+uint32_t ot_clipboard_service_drain_shim(ot_context *context) {
+  return ot_clipboard_service_drain(context);
+}
+
+uint32_t ot_clipboard_service_destroy_shim(ot_context *context) {
+  return ot_clipboard_service_destroy(context);
+}
+
+uint32_t ot_clipboard_read_operation_start_shim(
+    ot_context *context, const uint8_t *request, uint32_t request_length,
+    uint32_t selection, uint32_t max_bytes, uint32_t max_image_pixels,
+    uint32_t max_conversion_bytes, uint32_t timeout_ms,
+    ot_handle *out_operation) {
+  return ot_clipboard_read_operation_start(context, request, request_length,
+                                           (uint8_t)selection, max_bytes,
+                                           max_image_pixels,
+                                           max_conversion_bytes, timeout_ms,
+                                           out_operation);
+}
+
+uint32_t ot_clipboard_write_operation_start_shim(
+    ot_context *context, const uint8_t *text, uint32_t text_length,
+    uint32_t selection, uint32_t timeout_ms, ot_handle *out_operation) {
+  return ot_clipboard_write_operation_start(context, text, text_length,
+                                            (uint8_t)selection, timeout_ms,
+                                            out_operation);
+}
+
+uint32_t ot_clipboard_operation_poll_shim(ot_context *context,
+                                          const ot_handle *operation) {
+  return ot_clipboard_operation_poll(context, operation);
+}
+
+uint32_t ot_clipboard_operation_result_data_length_shim(
+    ot_context *context, const ot_handle *operation, uint32_t *out_length) {
+  return ot_clipboard_operation_result_data_length(context, operation,
+                                                   out_length);
+}
+
+uint32_t ot_clipboard_operation_result_data_copy_shim(
+    ot_context *context, const ot_handle *operation, uint8_t *out_bytes,
+    uint32_t capacity) {
+  return ot_clipboard_operation_result_data_copy(context, operation, out_bytes,
+                                                 capacity);
+}
+
+uint32_t ot_clipboard_operation_result_error_code_shim(
+    ot_context *context, const ot_handle *operation, uint32_t *out_code) {
+  return ot_clipboard_operation_result_error_code(context, operation, out_code);
+}
+
+uint32_t ot_clipboard_operation_destroy_shim(ot_context *context,
+                                             const ot_handle *operation) {
+  return ot_clipboard_operation_destroy(context, operation);
+}

@@ -1558,3 +1558,85 @@ extern "C" fn ot_buffer_draw_unicode_shim(
   bg23 : UInt32,
   attributes : UInt32,
 ) -> Int32 = "ot_buffer_draw_unicode_offscreen"
+
+///|
+// 宿主剪贴板异步服务：u8 状态返回走 shim 转 u32（MoonBit Byte 返回
+// 与 C uint8_t 的 ABI 映射不稳）。服务挂载在 Context 上。
+
+///|
+#borrow(context)
+extern "C" fn ot_clipboard_service_create_shim(
+  context : Context,
+  max_operations : UInt32,
+  max_provider_transfers : UInt32,
+) -> UInt32 = "ot_clipboard_service_create_shim"
+
+///|
+extern "C" fn ot_clipboard_service_drain_shim(context : Context) -> UInt32 = "ot_clipboard_service_drain_shim"
+
+///|
+extern "C" fn ot_clipboard_service_destroy_shim(context : Context) -> UInt32 = "ot_clipboard_service_destroy_shim"
+
+///|
+#borrow(context, request, out_operation)
+extern "C" fn ot_clipboard_read_operation_start_shim(
+  context : Context,
+  request : FixedArray[Byte],
+  request_length : UInt32,
+  selection : UInt32,
+  max_bytes : UInt32,
+  max_image_pixels : UInt32,
+  max_conversion_bytes : UInt32,
+  timeout_ms : UInt32,
+  out_operation : HandleOut,
+) -> UInt32 = "ot_clipboard_read_operation_start_shim"
+
+///|
+#borrow(context, text, out_operation)
+extern "C" fn ot_clipboard_write_operation_start_shim(
+  context : Context,
+  text : FixedArray[Byte],
+  text_length : UInt32,
+  selection : UInt32,
+  timeout_ms : UInt32,
+  out_operation : HandleOut,
+) -> UInt32 = "ot_clipboard_write_operation_start_shim"
+
+///|
+#borrow(context, operation)
+extern "C" fn ot_clipboard_operation_poll_shim(
+  context : Context,
+  operation : OtHandle,
+) -> UInt32 = "ot_clipboard_operation_poll_shim"
+
+///|
+#borrow(context, operation, out_length)
+extern "C" fn ot_clipboard_operation_result_data_length(
+  context : Context,
+  operation : OtHandle,
+  out_length : FixedArray[UInt32],
+) -> UInt32 = "ot_clipboard_operation_result_data_length_shim"
+
+///|
+#borrow(context, operation, out_bytes)
+extern "C" fn ot_clipboard_operation_result_data_copy(
+  context : Context,
+  operation : OtHandle,
+  out_bytes : FixedArray[Byte],
+  capacity : UInt32,
+) -> UInt32 = "ot_clipboard_operation_result_data_copy_shim"
+
+///|
+#borrow(context, operation, out_code)
+extern "C" fn ot_clipboard_operation_result_error_code(
+  context : Context,
+  operation : OtHandle,
+  out_code : FixedArray[UInt32],
+) -> UInt32 = "ot_clipboard_operation_result_error_code_shim"
+
+///|
+#borrow(context, operation)
+extern "C" fn ot_clipboard_operation_destroy_shim(
+  context : Context,
+  operation : OtHandle,
+) -> UInt32 = "ot_clipboard_operation_destroy_shim"
