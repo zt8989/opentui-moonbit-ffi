@@ -521,3 +521,12 @@ int32_t ot_embedded_terminal_encode_key_packed(
                                          key_count, key_text, text_count, bytes,
                                          capacity, out_count);
 }
+
+
+// Zig export bool（C _Bool，1 字节）与 MoonBit UInt32 返回不匹配，
+// shim 转成 u32。
+extern _Bool audioIsCaptureRunning(ot_context *context);
+
+uint32_t audio_is_capture_running_shim(ot_context *context) {
+  return audioIsCaptureRunning(context) ? 1u : 0u;
+}

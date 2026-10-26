@@ -660,3 +660,84 @@ priv struct EmbeddedTerminalCursor {
   mut color_b : UInt32
   mut reserved : UInt32
 }
+
+///|
+/// 音频引擎创建选项（native_audio.CreateOptions，8 字节）。
+priv struct AudioCreateOptions {
+  sample_rate : UInt32
+  playback_channels : UInt32
+}
+
+///|
+/// 音频启动选项（native_audio.StartOptions，24 字节：3×u32 + 12×u8）。
+/// 12 个 bool 按小端打包进 3 个 u32（b0_3/b4_7/b8_11 按声明序）。
+priv struct AudioStartOptions {
+  period_size_in_frames : UInt32
+  period_size_in_milliseconds : UInt32
+  periods : UInt32
+  bools0_3 : UInt32
+  bools4_7 : UInt32
+  bools8_11 : UInt32
+}
+
+///|
+/// 音频流选项（native_audio.StreamOptions，40 字节：10×u32）。
+priv struct AudioStreamOptions {
+  capacity_ms : UInt32
+  startup_ms : UInt32
+  resume_ms : UInt32
+  volume : Float
+  pan : Float
+  group_id : UInt32
+  max_probe_bytes : UInt32
+  format : UInt32
+  sample_rate : UInt32
+  channels : UInt32
+}
+
+///|
+/// 播放声音选项（native_audio.VoiceOptions，16 字节：f32 f32 bool+pad u32）。
+priv struct AudioVoiceOptions {
+  volume : Float
+  pan : Float
+  loop_ : UInt32
+  group_id : UInt32
+}
+
+///|
+/// 流统计（native_audio.StreamStats，56 字节：3×u64 + 8×u32，无头）。out 记录。
+priv struct AudioStreamStats {
+  mut bytes_received : UInt64
+  mut frames_decoded : UInt64
+  mut frames_played : UInt64
+  mut state : UInt32
+  mut sample_rate : UInt32
+  mut channels : UInt32
+  mut buffered_frames : UInt32
+  mut capacity_frames : UInt32
+  mut underruns : UInt32
+  mut error_code : Int32
+  mut ready_generation : UInt32
+}
+
+///|
+/// 引擎统计（native_audio.Stats，32 字节含对齐补齐，无头）。out 记录。
+priv struct AudioEngineStats {
+  mut sounds_loaded : UInt32
+  mut voices_active : UInt32
+  mut frames_mixed : UInt64
+  mut last_peak : Float
+  mut last_rms : Float
+}
+
+///|
+/// 采集统计（native_audio.CaptureStats，48 字节：3×u64 + 4×u32，无头）。out 记录。
+priv struct AudioCaptureStats {
+  mut frames_received : UInt64
+  mut frames_read : UInt64
+  mut frames_dropped : UInt64
+  mut sample_rate : UInt32
+  mut channels : UInt32
+  mut buffered_frames : UInt32
+  mut capacity_frames : UInt32
+}
